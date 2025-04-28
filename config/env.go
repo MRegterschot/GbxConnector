@@ -1,12 +1,11 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
+	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
-	"github.com/MRegterschot/GbxConnector/utils"
 	"github.com/joho/godotenv"
 )
 
@@ -23,22 +22,21 @@ func LoadEnv() error {
 	}
 
 	servers := make([]structs.Server, 0)
-	if err = utils.ReadFile("./servers.json", &servers); err != nil {
+	if err = lib.ReadFile("./servers.json", &servers); err != nil {
 		return err
 	}
 
 	// Check if the server is local
 	for i, server := range servers {
-		servers[i].IsLocal = utils.IsLocalHostname(server.Host)
+		servers[i].IsLocal = lib.IsLocalHostname(server.Host)
 	}
 
 	AppEnv = &structs.Env{
 		Port:       port,
 		CorsOrigin: os.Getenv("CORS_ORIGIN"),
+		LogLevel:   os.Getenv("LOG_LEVEL"),
 		Servers:    servers,
 	}
-
-	fmt.Println(AppEnv.Servers)
 
 	return nil
 }

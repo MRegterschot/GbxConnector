@@ -1,12 +1,11 @@
 package app
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/MRegterschot/GbxConnector/config"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -19,23 +18,16 @@ func SetupAndRunApp() error {
 
 	config.SetupLogger()
 
-	defer zap.L().Sync()
+	// Create a new Gorilla Mux router
+	router := mux.NewRouter()
 
-	// create app
-	app := fiber.New(fiber.Config{
-		BodyLimit: 4 * 1024 * 1024, // 4 MB
-	})
+	// Set up routes
+	SetupRoutes(router)
 
-	// attach middleware
-	app.Use(recover.New())
-	app.Use(logger.New(logger.Config{
-		Format: "[${ip}]:${port} ${status} - ${method} ${path} ${latency}\n",
-	}))
+	// Attach middleware
+	handler := loggingMiddleware(recoveryMiddleware(router))
 
-	// setup routes
-	SetupRoutes(app)
-
-	app.Listen(":" + strconv.Itoa(config.AppEnv.Port))
-
-	return nil
+	port := strconv.Itoa(config.AppEnv.Port)
+	zap.L().Info("Starting server", zap.String("port", port))
+	return http.ListenAndServe(":"+port, handler)
 }

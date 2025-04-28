@@ -1,22 +1,18 @@
 package app
 
 import (
-	"github.com/MRegterschot/GbxConnector/config"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"net/http"
+
+	"github.com/MRegterschot/GbxConnector/sockets"
+	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(app *fiber.App) {
-	// Middleware
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     config.AppEnv.CorsOrigin,
-		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept",
-		AllowCredentials: true,
-	}))
+func SetupRoutes(r *mux.Router) {
+	// Health check
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	}).Methods("GET")
 
-	// Health check route
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.SendString("OK")
-	})
+	r.HandleFunc("/servers", sockets.HandleServersConnection).Methods("GET")
 }

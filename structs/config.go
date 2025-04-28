@@ -14,5 +14,6 @@ type Server struct {
 type Env struct {
 	Port       int
 	CorsOrigin string
+	LogLevel   string
 	Servers    []Server `json:"servers"`
 }
