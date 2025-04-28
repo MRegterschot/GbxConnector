@@ -23,7 +23,7 @@ func LoadEnv() error {
 	}
 
 	servers := make([]structs.Server, 0)
-	if err = utils.ReadFile("../servers.json", servers); err != nil {
+	if err = utils.ReadFile("./servers.json", &servers); err != nil {
 		return err
 	}
 
@@ -33,11 +33,12 @@ func LoadEnv() error {
 	}
 
 	AppEnv = &structs.Env{
-		Port:    port,
-		Servers: servers,
+		Port:       port,
+		CorsOrigin: os.Getenv("CORS_ORIGIN"),
+		Servers:    servers,
 	}
 
-	fmt.Println(AppEnv)
+	fmt.Println(AppEnv.Servers)
 
 	return nil
 }

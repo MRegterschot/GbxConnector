@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
@@ -8,9 +9,9 @@ import (
 func SetupRoutes(app *fiber.App) {
 	// Middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
-		AllowHeaders: "Origin, Content-Type, Accept",
+		AllowOrigins:     config.AppEnv.CorsOrigin,
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowCredentials: true,
 	}))
 

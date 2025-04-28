@@ -5,19 +5,15 @@ import (
 	"os"
 )
 
-func ReadFile[T any](path string, dest T) error {
+func ReadFile[T any](path string, dest *T) error {
 	// Open the file
-	file, err := os.Open(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	// Defer closing the file
-	defer file.Close()
-
-	// Read the file content
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&dest); err != nil {
+	// Unmarshal the JSON data into the destination variable
+	if err := json.Unmarshal(data, dest); err != nil {
 		return err
 	}
 

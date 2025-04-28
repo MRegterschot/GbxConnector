@@ -12,6 +12,7 @@ type Server struct {
 }
 
 type Env struct {
-	Port    int
-	Servers []Server `json:"servers"`
+	Port       int
+	CorsOrigin string
+	Servers    []Server `json:"servers"`
 }
