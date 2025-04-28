@@ -1,0 +1,20 @@
+[
+  {
+    "id": 0,
+    "name": "Big Massive Server",
+    "description": "This is a local server for testing purposes.",
+    "host": "127.0.0.1",
+    "xmlrpc_port": 5000,
+    "user": "SuperAdmin",
+    "password": "SuperAdmin"
+  },
+  {
+    "id": 1,
+    "name": "Ik zit in de kast",
+    "description": "This is a local server for testing purposes.",
+    "host": "localhost",
+    "xmlrpc_port": 5001,
+    "user": "SuperAdmin",
+    "password": "SuperAdmin"
+  }
+]
