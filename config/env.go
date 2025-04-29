@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
@@ -26,16 +27,16 @@ func LoadEnv() error {
 		return err
 	}
 
-	// Check if the server is local
+	// Check if the server is local and check if we can connect
 	for i, server := range servers {
 		servers[i].IsLocal = lib.IsLocalHostname(server.Host)
 	}
 
 	AppEnv = &structs.Env{
-		Port:       port,
-		CorsOrigin: os.Getenv("CORS_ORIGIN"),
-		LogLevel:   os.Getenv("LOG_LEVEL"),
-		Servers:    servers,
+		Port:        port,
+		CorsOrigins: strings.Split(os.Getenv("CORS_ORIGINS"), " "),
+		LogLevel:    os.Getenv("LOG_LEVEL"),
+		Servers:     servers,
 	}
 
 	return nil

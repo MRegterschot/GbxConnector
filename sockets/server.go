@@ -2,6 +2,8 @@ package sockets
 
 import (
 	"net/http"
+	"slices"
+	"sync"
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/gorilla/websocket"
@@ -12,21 +14,34 @@ import (
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		allowedOrigin := config.AppEnv.CorsOrigin
+		allowedOrigins := config.AppEnv.CorsOrigins
 
+		// If no origin header is present, deny the request
 		if origin == "" {
 			zap.L().Warn("WebSocket request missing Origin header")
 			return false
 		}
 
-		if origin != allowedOrigin {
-			zap.L().Warn("WebSocket Origin not allowed", zap.String("origin", origin), zap.String("allowed", allowedOrigin))
-			return false
+		// Check for empty allowed origins
+		if len(allowedOrigins) == 0 {
+			zap.L().Warn("No CORS origins configured, allowing all origins")
+			return true
 		}
 
-		return true
+		// Check for allow all origins
+		if slices.Contains(allowedOrigins, "*") {
+			return true
+		}
+
+		// Check if the origin is in the allowed origins
+		return slices.Contains(allowedOrigins, origin)
 	},
 }
+
+var (
+	clients   = make(map[*websocket.Conn]bool) // Connected clients
+	clientsMu sync.Mutex
+)
 
 // WebSocket connection handler
 func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
@@ -35,22 +50,46 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 		zap.L().Error("Failed to upgrade connection", zap.Error(err))
 		return
 	}
-	defer conn.Close()
 
-	zap.L().Info("WebSocket connection established", zap.String("remote_addr", r.RemoteAddr))
+	// Save connection
+	clientsMu.Lock()
+	clients[conn] = true
+	clientsMu.Unlock()
 
-	for {
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			zap.L().Error("Error reading message", zap.Error(err))
-			return
+	zap.L().Info("New WebSocket connection established", zap.String("remoteAddr", conn.RemoteAddr().String()))
+
+	// Send initial message to the client
+	if err := conn.WriteJSON(config.AppEnv.Servers.ToServerResponses()); err != nil {
+		zap.L().Error("Failed to send initial message to client", zap.Error(err))
+		conn.Close()
+		return
+	}
+
+	// Handle disconnection
+	go func() {
+		for {
+			if _, _, err := conn.NextReader(); err != nil {
+				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()))
+				clientsMu.Lock()
+				delete(clients, conn)
+				clientsMu.Unlock()
+				conn.Close()
+				break
+			}
 		}
+	}()
+}
 
-		zap.L().Info("Received message", zap.String("message", string(p)))
-
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			zap.L().Error("Error writing message", zap.Error(err))
-			return
+// Broadcast message to all connected clients
+// This function is generic and can be used to send any type of message
+func BroadcastServers[T any](msg T) {
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+	for conn := range clients {
+		if err := conn.WriteJSON(msg); err != nil {
+			zap.L().Error("Failed to send message to client", zap.Error(err))
+			conn.Close()
+			delete(clients, conn)
 		}
 	}
 }
