@@ -26,7 +26,7 @@ type Env struct {
 type ServerResponse struct {
 	Id          int     `json:"id"`
 	Name        string  `json:"name"`
-	Description *string `json:"description"`
+	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
 	IsLocal     bool    `json:"isLocal"`
@@ -40,7 +40,7 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 		if s.Client != nil {
 			isConnected = s.Client.IsConnected
 		}
-		
+
 		responses[i] = ServerResponse{
 			Id:          s.Id,
 			Name:        s.Name,
