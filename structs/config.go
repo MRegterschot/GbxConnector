@@ -1,18 +1,20 @@
 package structs
 
+import "github.com/MRegterschot/GbxRemoteGo/gbxclient"
+
 type Server struct {
-	Id          int     `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-	Host        string  `json:"host"`
-	XMLRPCPort  int     `json:"xmlrpcPort"`
-	User        string  `json:"user"`
-	Pass        string  `json:"pass"`
-	IsLocal     bool    `json:"isLocal"`
-	IsConnected bool    `json:"isConnected"`
+	Id          int                  `json:"id"`
+	Name        string               `json:"name"`
+	Description *string              `json:"description"`
+	Host        string               `json:"host"`
+	XMLRPCPort  int                  `json:"xmlrpcPort"`
+	User        string               `json:"user"`
+	Pass        string               `json:"pass"`
+	IsLocal     bool                 `json:"isLocal"`
+	Client      *gbxclient.GbxClient `json:"-"`
 }
 
-type ServerList []Server
+type ServerList []*Server
 
 type Env struct {
 	Port        int
@@ -34,6 +36,11 @@ type ServerResponse struct {
 func (servers ServerList) ToServerResponses() []ServerResponse {
 	responses := make([]ServerResponse, len(servers))
 	for i, s := range servers {
+		isConnected := false
+		if s.Client != nil {
+			isConnected = s.Client.IsConnected
+		}
+		
 		responses[i] = ServerResponse{
 			Id:          s.Id,
 			Name:        s.Name,
@@ -41,7 +48,7 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 			Host:        s.Host,
 			XMLRPCPort:  s.XMLRPCPort,
 			IsLocal:     s.IsLocal,
-			IsConnected: s.IsConnected,
+			IsConnected: isConnected,
 		}
 	}
 	return responses

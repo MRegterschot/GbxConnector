@@ -3,31 +3,27 @@ package listeners
 import (
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/sockets"
-	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
+	"github.com/MRegterschot/GbxConnector/structs"
 )
 
-func OnConnect(client *gbxclient.GbxClient, serverId int) {
+func OnConnect(server *structs.Server) {
 	onConnectChan := make(chan any, 1)
-	client.Events.On("connect", onConnectChan)
+	server.Client.Events.On("connect", onConnectChan)
 
 	go func() {
 		for range onConnectChan {
-			config.AppEnv.Servers[serverId].IsConnected = true
 			sockets.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
-			return
 		}
 	}()
 }
 
-func OnDisconnect(client *gbxclient.GbxClient, serverId int) {
+func OnDisconnect(server *structs.Server) {
 	onDisconnectChan := make(chan any, 1)
-	client.Events.On("disconnect", onDisconnectChan)
+	server.Client.Events.On("disconnect", onDisconnectChan)
 
 	go func() {
 		for range onDisconnectChan {
-			config.AppEnv.Servers[serverId].IsConnected = false
 			sockets.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
-			return
 		}
 	}()
 }

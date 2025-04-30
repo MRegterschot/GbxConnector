@@ -18,13 +18,12 @@ var upgrader = websocket.Upgrader{
 
 		// If no origin header is present, deny the request
 		if origin == "" {
-			zap.L().Warn("WebSocket request missing Origin header")
+			zap.L().Debug("WebSocket request missing Origin header")
 			return false
 		}
 
 		// Check for empty allowed origins
 		if len(allowedOrigins) == 0 {
-			zap.L().Warn("No CORS origins configured, allowing all origins")
 			return true
 		}
 

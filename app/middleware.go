@@ -13,7 +13,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Log the incoming request using Zap
-		zap.L().Info("Received request",
+		zap.L().Debug("Received request",
 			zap.String("remote_addr", r.RemoteAddr),
 			zap.String("method", r.Method),
 			zap.String("url", r.URL.String()),
@@ -24,7 +24,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		// Log the response time after processing
-		zap.L().Info("Request processed",
+		zap.L().Debug("Request processed",
 			zap.String("remote_addr", r.RemoteAddr),
 			zap.String("method", r.Method),
 			zap.String("url", r.URL.String()),

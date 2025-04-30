@@ -22,7 +22,7 @@ func LoadEnv() error {
 		port = 6980
 	}
 
-	servers := make([]structs.Server, 0)
+	servers := make([]*structs.Server, 0)
 	if err = lib.ReadFile("./servers.json", &servers); err != nil {
 		return err
 	}

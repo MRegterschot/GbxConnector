@@ -16,15 +16,11 @@ func SetupAndRunApp() error {
 	if err != nil {
 		return err
 	}
-	
+
 	config.SetupLogger()
 
-	for i, server := range config.AppEnv.Servers {
-		if _, err := GetClient(server); err != nil {
-			config.AppEnv.Servers[i].IsConnected = false
-		} else {
-			config.AppEnv.Servers[i].IsConnected = true
-		}
+	for _, server := range config.AppEnv.Servers {
+		GetClient(server)
 
 		// Call cancel() to stop the reconnect loop when the context is done
 		ctx, cancel := context.WithCancel(context.Background())
@@ -32,6 +28,9 @@ func SetupAndRunApp() error {
 		defer cancel()
 	}
 
+	if len(config.AppEnv.CorsOrigins) == 0 {
+		zap.L().Warn("No CORS origins configured, allowing all origins")
+	}
 
 	// Create a new Gorilla Mux router
 	router := mux.NewRouter()
