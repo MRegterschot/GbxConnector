@@ -1,6 +1,7 @@
-package sockets
+package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"slices"
 	"sync"
@@ -90,5 +91,14 @@ func BroadcastServers[T any](msg T) {
 			conn.Close()
 			delete(clients, conn)
 		}
+	}
+}
+
+func HandleGetServers(w http.ResponseWriter, r *http.Request) {
+	servers := config.AppEnv.Servers.ToServerResponses()
+	if err := json.NewEncoder(w).Encode(servers); err != nil {
+		zap.L().Error("Failed to encode servers response", zap.Error(err))
+		http.Error(w, "Failed to encode servers response", http.StatusInternalServerError)
+		return
 	}
 }

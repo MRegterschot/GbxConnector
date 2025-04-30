@@ -2,7 +2,7 @@ package listeners
 
 import (
 	"github.com/MRegterschot/GbxConnector/config"
-	"github.com/MRegterschot/GbxConnector/sockets"
+	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/MRegterschot/GbxConnector/structs"
 )
 
@@ -12,7 +12,7 @@ func OnConnect(server *structs.Server) {
 
 	go func() {
 		for range onConnectChan {
-			sockets.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
+			handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
 		}
 	}()
 }
@@ -23,7 +23,7 @@ func OnDisconnect(server *structs.Server) {
 
 	go func() {
 		for range onDisconnectChan {
-			sockets.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
+			handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
 		}
 	}()
 }

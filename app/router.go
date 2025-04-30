@@ -3,7 +3,7 @@ package app
 import (
 	"net/http"
 
-	"github.com/MRegterschot/GbxConnector/sockets"
+	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -14,5 +14,6 @@ func SetupRoutes(r *mux.Router) {
 		w.Write([]byte("OK"))
 	}).Methods("GET")
 
-	r.HandleFunc("/servers", sockets.HandleServersConnection).Methods("GET")
+	r.HandleFunc("/ws/servers", handlers.HandleServersConnection).Methods("GET")
+	r.HandleFunc("/servers", handlers.HandleGetServers).Methods("GET")
 }
