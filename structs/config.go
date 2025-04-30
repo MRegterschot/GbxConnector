@@ -29,6 +29,8 @@ type ServerResponse struct {
 	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
+	User        string  `json:"user"`
+	Pass        string  `json:"pass"`
 	IsLocal     bool    `json:"isLocal"`
 	IsConnected bool    `json:"isConnected"`
 }
@@ -47,6 +49,8 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 			Description: s.Description,
 			Host:        s.Host,
 			XMLRPCPort:  s.XMLRPCPort,
+			User:        s.User,
+			Pass:        s.Pass,
 			IsLocal:     s.IsLocal,
 			IsConnected: isConnected,
 		}
