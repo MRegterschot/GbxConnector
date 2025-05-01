@@ -6,6 +6,8 @@ github.com/MRegterschot/GbxRemoteGo v1.0.3 h1:vDJcxDrEtXMDbWs5P8iLvusNx1s9HY17fD
 github.com/MRegterschot/GbxRemoteGo v1.0.3/go.mod h1:8l3d6bq5xWd8qMptgXav9r3j0c5LtQROCl3z/IqrcKs=
 github.com/MRegterschot/GbxRemoteGo v1.0.4 h1:JUf59Q/FgDuN/qSn8SUXFdS33GVvSkMOPpWKx8ThIBM=
 github.com/MRegterschot/GbxRemoteGo v1.0.4/go.mod h1:8l3d6bq5xWd8qMptgXav9r3j0c5LtQROCl3z/IqrcKs=
+github.com/MRegterschot/GbxRemoteGo v1.0.5 h1:dhOU/uIZPtP1ENN644jDexqVPSyvn69b2inYPFwVPuQ=
+github.com/MRegterschot/GbxRemoteGo v1.0.5/go.mod h1:8l3d6bq5xWd8qMptgXav9r3j0c5LtQROCl3z/IqrcKs=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=

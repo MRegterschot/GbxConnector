@@ -19,6 +19,7 @@ func SetupAndRunApp() error {
 
 	config.SetupLogger()
 
+	zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))
 	for _, server := range config.AppEnv.Servers {
 		GetClient(server)
 

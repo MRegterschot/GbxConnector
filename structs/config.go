@@ -1,6 +1,10 @@
 package structs
 
-import "github.com/MRegterschot/GbxRemoteGo/gbxclient"
+import (
+	"time"
+
+	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
+)
 
 type Server struct {
 	Id          int                  `json:"id"`
@@ -17,10 +21,11 @@ type Server struct {
 type ServerList []*Server
 
 type Env struct {
-	Port        int
-	CorsOrigins []string
-	LogLevel    string
-	Servers     ServerList `json:"servers"`
+	Port              int
+	CorsOrigins       []string
+	LogLevel          string
+	ReconnectInterval time.Duration
+	Servers           ServerList `json:"servers"`
 }
 
 type ServerResponse struct {

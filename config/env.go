@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
@@ -13,9 +14,7 @@ import (
 var AppEnv *structs.Env
 
 func LoadEnv() error {
-	if err := godotenv.Load(); err != nil {
-		return err
-	}
+	_ = godotenv.Load()
 
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
@@ -32,11 +31,17 @@ func LoadEnv() error {
 		servers[i].IsLocal = lib.IsLocalHostname(server.Host)
 	}
 
+	reconnectInterval, err := strconv.Atoi(os.Getenv("SERVER_RECONNECT_INTERVAL"))
+	if err != nil {
+		reconnectInterval = 5
+	}
+
 	AppEnv = &structs.Env{
-		Port:        port,
-		CorsOrigins: strings.Split(os.Getenv("CORS_ORIGINS"), " "),
-		LogLevel:    os.Getenv("LOG_LEVEL"),
-		Servers:     servers,
+		Port:              port,
+		CorsOrigins:       strings.Split(os.Getenv("CORS_ORIGINS"), ","),
+		LogLevel:          os.Getenv("LOG_LEVEL"),
+		ReconnectInterval: time.Duration(reconnectInterval) * time.Second,
+		Servers:           servers,
 	}
 
 	return nil

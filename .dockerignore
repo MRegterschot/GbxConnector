@@ -1,0 +1,25 @@
+# Binaries
+/server
+*.exe
+*.out
+
+# Dependency directories
+/vendor
+
+# Build cache
+*.log
+*.tmp
+*.cache
+
+# Git and other VCS
+.git
+.gitignore
+
+# IDE/editor config files
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db

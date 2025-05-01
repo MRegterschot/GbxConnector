@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/listeners"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
@@ -52,7 +53,7 @@ func ConnectClient(server *structs.Server) error {
 
 func StartReconnectLoop(ctx context.Context, server *structs.Server) {
 	go func() {
-		ticker := time.NewTicker(6 * time.Second)
+		ticker := time.NewTicker(config.AppEnv.ReconnectInterval)
 		defer ticker.Stop()
 
 		for {
