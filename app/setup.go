@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/MRegterschot/GbxConnector/config"
+	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
@@ -22,6 +23,7 @@ func SetupAndRunApp() error {
 	zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))
 	for _, server := range config.AppEnv.Servers {
 		GetClient(server)
+		handlers.GetListenerSocket(server.Id)
 
 		// Call cancel() to stop the reconnect loop when the context is done
 		ctx, cancel := context.WithCancel(context.Background())

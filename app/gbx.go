@@ -19,8 +19,9 @@ func GetClient(server *structs.Server) error {
 
 	server.Client = gbxclient.NewGbxClient(server.Host, server.XMLRPCPort, gbxclient.Options{})
 
-	listeners.OnConnect(server)
-	listeners.OnDisconnect(server)
+	// Add listeners
+	listeners.AddConnectionListeners(server)
+	listeners.AddMapListeners(server)
 
 	if err := ConnectClient(server); err != nil {
 		return err
@@ -48,6 +49,11 @@ func ConnectClient(server *structs.Server) error {
 	}
 
 	zap.L().Info("Connected to server", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
+	
+	server.Client.EnableCallbacks(true)
+	server.Client.SetApiVersion("2023-04-16")
+	server.Client.TriggerModeScriptEventArray("XmlRpc.EnableCallbacks", []string{"true"})
+
 	return nil
 }
 

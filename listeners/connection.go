@@ -6,7 +6,12 @@ import (
 	"github.com/MRegterschot/GbxConnector/structs"
 )
 
-func OnConnect(server *structs.Server) {
+func AddConnectionListeners(server *structs.Server) {
+	onConnect(server)
+	onDisconnect(server)
+}
+
+func onConnect(server *structs.Server) {
 	onConnectChan := make(chan any, 1)
 	server.Client.Events.On("connect", onConnectChan)
 
@@ -17,7 +22,7 @@ func OnConnect(server *structs.Server) {
 	}()
 }
 
-func OnDisconnect(server *structs.Server) {
+func onDisconnect(server *structs.Server) {
 	onDisconnectChan := make(chan any, 1)
 	server.Client.Events.On("disconnect", onDisconnectChan)
 

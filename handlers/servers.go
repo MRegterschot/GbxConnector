@@ -38,10 +38,14 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var (
-	clients   = make(map[*websocket.Conn]bool) // Connected clients
-	clientsMu sync.Mutex
-)
+type ServerSocket struct {
+	Clients map[*websocket.Conn]bool // Connected clients
+	ClientsMu sync.Mutex
+}
+
+var serverSocket = &ServerSocket{
+	Clients: make(map[*websocket.Conn]bool),
+}
 
 // WebSocket connection handler
 func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
@@ -52,9 +56,9 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save connection
-	clientsMu.Lock()
-	clients[conn] = true
-	clientsMu.Unlock()
+	serverSocket.ClientsMu.Lock()
+	serverSocket.Clients[conn] = true
+	serverSocket.ClientsMu.Unlock()
 
 	zap.L().Info("New WebSocket connection established", zap.String("remoteAddr", conn.RemoteAddr().String()))
 
@@ -70,9 +74,9 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 		for {
 			if _, _, err := conn.NextReader(); err != nil {
 				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()))
-				clientsMu.Lock()
-				delete(clients, conn)
-				clientsMu.Unlock()
+				serverSocket.ClientsMu.Lock()
+				delete(serverSocket.Clients, conn)
+				serverSocket.ClientsMu.Unlock()
 				conn.Close()
 				break
 			}
@@ -83,13 +87,13 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 // Broadcast message to all connected clients
 // This function is generic and can be used to send any type of message
 func BroadcastServers[T any](msg T) {
-	clientsMu.Lock()
-	defer clientsMu.Unlock()
-	for conn := range clients {
+	serverSocket.ClientsMu.Lock()
+	defer serverSocket.ClientsMu.Unlock()
+	for conn := range serverSocket.Clients {
 		if err := conn.WriteJSON(msg); err != nil {
 			zap.L().Error("Failed to send message to client", zap.Error(err))
 			conn.Close()
-			delete(clients, conn)
+			delete(serverSocket.Clients, conn)
 		}
 	}
 }

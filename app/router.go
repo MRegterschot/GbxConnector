@@ -16,4 +16,6 @@ func SetupRoutes(r *mux.Router) {
 
 	r.HandleFunc("/ws/servers", handlers.HandleServersConnection).Methods("GET")
 	r.HandleFunc("/servers", handlers.HandleGetServers).Methods("GET")
+
+	r.HandleFunc("/ws/listeners/{serverId:[0-9]+}", handlers.HandleListenerConnection).Methods("GET")
 }
