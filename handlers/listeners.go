@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -49,6 +50,22 @@ func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 	ls.Clients[conn] = true
 	ls.ClientsMu.Unlock()
 
+	// Get current active map of the server
+	var activeMap string
+	for _, server := range config.AppEnv.Servers {
+		if server.Id == serverId {
+			activeMap = server.ActiveMap
+			break
+		}
+	}
+
+	// Send initial message to the client
+	if err := conn.WriteJSON(activeMap); err != nil {
+		zap.L().Error("Failed to send initial message to client", zap.Error(err))
+		conn.Close()
+		return
+	}
+
 	// Handle disconnection
 	go func() {
 		for {
@@ -63,7 +80,6 @@ func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 }
-
 
 // Broadcast message to all connected clients
 func BroadcastListener(serverId int, message any) {

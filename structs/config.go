@@ -16,6 +16,7 @@ type Server struct {
 	Pass        string               `json:"pass"`
 	IsLocal     bool                 `json:"isLocal"`
 	Client      *gbxclient.GbxClient `json:"-"`
+	ActiveMap   string               `json:"activeMap"`
 }
 
 type ServerList []*Server

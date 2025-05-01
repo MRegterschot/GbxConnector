@@ -42,17 +42,25 @@ func ConnectClient(server *structs.Server) error {
 		return err
 	}
 
-	zap.L().Debug("Authenticating with server", zap.String("user", server.User))
+	zap.L().Info("Authenticating with server", zap.Int("id", server.Id))
 	if err := server.Client.Authenticate(server.User, server.Pass); err != nil {
-		zap.L().Debug("Failed to authenticate with server", zap.Error(err))
+		zap.L().Error("Failed to authenticate with server", zap.Error(err))
 		return err
 	}
 
 	zap.L().Info("Connected to server", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
-	
+
 	server.Client.EnableCallbacks(true)
 	server.Client.SetApiVersion("2023-04-16")
 	server.Client.TriggerModeScriptEventArray("XmlRpc.EnableCallbacks", []string{"true"})
+
+	// Set the active map to the current map
+	mapInfo, err := server.Client.GetCurrentMapInfo()
+	if err != nil {
+		zap.L().Error("Failed to get current map info", zap.Error(err))
+	}
+
+	server.ActiveMap = mapInfo.UId
 
 	return nil
 }

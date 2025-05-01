@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 )
 
-require github.com/MRegterschot/GbxRemoteGo v1.0.5 // indirect
+require github.com/MRegterschot/GbxRemoteGo v1.0.6 // indirect
 
 require (
 	github.com/joho/godotenv v1.5.1
