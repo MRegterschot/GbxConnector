@@ -40,12 +40,23 @@ var upgrader = websocket.Upgrader{
 }
 
 type ServerSocket struct {
-	Clients map[*websocket.Conn]bool // Connected clients
+	Clients   map[*websocket.Conn]bool // Connected clients
 	ClientsMu sync.Mutex
 }
 
 var serverSocket = &ServerSocket{
 	Clients: make(map[*websocket.Conn]bool),
+}
+
+// Define a function type for adding servers
+type ServerAdderFunc func(server *structs.Server) error
+
+// Store the function so the handler can use it
+var addServerFunc ServerAdderFunc
+
+// SetAddServerFunc sets the function to be used for adding servers
+func SetAddServerFunc(fn ServerAdderFunc) {
+	addServerFunc = fn
 }
 
 // WebSocket connection handler
@@ -109,6 +120,7 @@ func HandleGetServers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleAddServer handles requests to add a new server
 func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 	var server structs.Server
 	if err := json.NewDecoder(r.Body).Decode(&server); err != nil {
@@ -117,7 +129,17 @@ func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config.AppEnv.Servers = append(config.AppEnv.Servers, &server)
-	BroadcastServers(config.AppEnv.Servers.ToServerResponses())
-	w.WriteHeader(http.StatusCreated)
+	if addServerFunc == nil {
+		zap.L().Error("Add server function not set")
+		http.Error(w, "Server configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := addServerFunc(&server); err != nil {
+		zap.L().Error("Failed to add server", zap.Error(err))
+		http.Error(w, "Failed to add server", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

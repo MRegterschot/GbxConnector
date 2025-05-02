@@ -10,15 +10,15 @@ import (
 type Server struct {
 	Id          int     `json:"id"`
 	Name        string  `json:"name"`
-	Description *string `json:"description"`
+	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
 	User        string  `json:"user"`
 	Pass        string  `json:"pass"`
-	IsLocal     bool    `json:"isLocal"`
-	ActiveMap   string  `json:"activeMap"`
 
 	// Internal
+	IsLocal    bool                 `json:"-"`
+	ActiveMap  string               `json:"-"`
 	Client     *gbxclient.GbxClient `json:"-"`
 	CancelFunc context.CancelFunc   `json:"-"`
 	Ctx        context.Context      `json:"-"`
