@@ -50,11 +50,13 @@ var serverSocket = &ServerSocket{
 	Clients: make(map[*websocket.Conn]bool),
 }
 
-type ServerAdderFunc func(server *structs.Server) error
+type ServerAdderFunc func(server *structs.Server) (*structs.Server, error)
 type ServerRemoverFunc func(serverId int) error
+type ServerUpdaterFunc func(serverId int, server *structs.Server) (*structs.Server, error)
 
 var addServerFunc ServerAdderFunc
 var removeServerFunc ServerRemoverFunc
+var updateServerFunc ServerUpdaterFunc
 
 func SetAddServerFunc(fn ServerAdderFunc) {
 	addServerFunc = fn
@@ -62,6 +64,10 @@ func SetAddServerFunc(fn ServerAdderFunc) {
 
 func SetRemoveServerFunc(fn ServerRemoverFunc) {
 	removeServerFunc = fn
+}
+
+func SetUpdateServerFunc(fn ServerUpdaterFunc) {
+	updateServerFunc = fn
 }
 
 // WebSocket connection handler
@@ -140,13 +146,20 @@ func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := addServerFunc(&server); err != nil {
+	newServer, err := addServerFunc(&server) 
+
+	if err != nil {
 		zap.L().Error("Failed to add server", zap.Error(err))
 		http.Error(w, "Failed to add server", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(newServer.ToServerResponse()); err != nil {
+		zap.L().Error("Failed to encode server response", zap.Error(err))
+		http.Error(w, "Failed to encode server response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // HandleDeleteServer handles requests to delete a server
@@ -177,4 +190,44 @@ func HandleDeleteServer(w http.ResponseWriter, r *http.Request) {
 	servers := config.AppEnv.Servers.ToServerResponses()
 	BroadcastServers(servers)
 	w.WriteHeader(http.StatusOK)
+}
+
+// HandleUpdateServer handles requests to update a server
+func HandleUpdateServer(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serverIDStr := vars["id"]
+
+	serverId, err := strconv.Atoi(serverIDStr)
+	if err != nil {
+		zap.L().Error("Invalid server ID", zap.Error(err))
+		http.Error(w, "Invalid server ID", http.StatusBadRequest)
+		return
+	}
+
+	var server structs.Server
+	if err := json.NewDecoder(r.Body).Decode(&server); err != nil {
+		zap.L().Error("Failed to decode server", zap.Error(err))
+		http.Error(w, "Failed to decode server", http.StatusBadRequest)
+		return
+	}
+
+	if updateServerFunc == nil {
+		zap.L().Error("Update server function not set")
+		http.Error(w, "Server configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	updatedServer, err := updateServerFunc(serverId, &server)
+	if err != nil {
+		zap.L().Error("Failed to update server", zap.Error(err))
+		http.Error(w, "Failed to update server", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(updatedServer.ToServerResponse()); err != nil {
+		zap.L().Error("Failed to encode server response", zap.Error(err))
+		http.Error(w, "Failed to encode server response", http.StatusInternalServerError)
+		return
+	}
 }

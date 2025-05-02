@@ -9,7 +9,6 @@ import (
 
 	"github.com/MRegterschot/GbxConnector/app"
 	"github.com/MRegterschot/GbxConnector/config"
-	"github.com/MRegterschot/GbxConnector/structs"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +25,7 @@ func main() {
 
 	zap.L().Info("Received shutdown signal, shutting down...")
 
-	ShutdownServers(config.AppEnv.Servers)
+	app.ShutdownServers(config.AppEnv.Servers)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -38,11 +37,3 @@ func main() {
 	}
 }
 
-func ShutdownServers(servers []*structs.Server) {
-	for _, server := range servers {
-		if server.CancelFunc != nil {
-			zap.L().Info("Shutting down server", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
-			server.CancelFunc()
-		}
-	}
-}

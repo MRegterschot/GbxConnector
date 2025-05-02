@@ -46,6 +46,25 @@ type ServerResponse struct {
 	IsConnected bool    `json:"isConnected"`
 }
 
+func (s *Server) ToServerResponse() ServerResponse {
+	isConnected := false
+	if s.Client != nil {
+		isConnected = s.Client.IsConnected
+	}
+
+	return ServerResponse{
+		Id:          s.Id,
+		Name:        s.Name,
+		Description: s.Description,
+		Host:        s.Host,
+		XMLRPCPort:  s.XMLRPCPort,
+		User:        s.User,
+		Pass:        s.Pass,
+		IsLocal:     s.IsLocal,
+		IsConnected: isConnected,
+	}
+}
+
 func (servers ServerList) ToServerResponses() []ServerResponse {
 	responses := make([]ServerResponse, len(servers))
 	for i, s := range servers {

@@ -18,6 +18,7 @@ func SetupRoutes(r *mux.Router) {
 	r.HandleFunc("/servers", handlers.HandleGetServers).Methods("GET")
 	r.HandleFunc("/servers", handlers.HandleAddServer).Methods("POST")
 	r.HandleFunc("/servers/{id}", handlers.HandleDeleteServer).Methods("DELETE")
+	r.HandleFunc("/servers/{id}", handlers.HandleUpdateServer).Methods("PUT")
 
 	r.HandleFunc("/ws/listeners/{serverId:[0-9]+}", handlers.HandleListenerConnection).Methods("GET")
 }
