@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"strconv"
 	"sync"
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/structs"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
@@ -48,15 +50,18 @@ var serverSocket = &ServerSocket{
 	Clients: make(map[*websocket.Conn]bool),
 }
 
-// Define a function type for adding servers
 type ServerAdderFunc func(server *structs.Server) error
+type ServerRemoverFunc func(serverId int) error
 
-// Store the function so the handler can use it
 var addServerFunc ServerAdderFunc
+var removeServerFunc ServerRemoverFunc
 
-// SetAddServerFunc sets the function to be used for adding servers
 func SetAddServerFunc(fn ServerAdderFunc) {
 	addServerFunc = fn
+}
+
+func SetRemoveServerFunc(fn ServerRemoverFunc) {
+	removeServerFunc = fn
 }
 
 // WebSocket connection handler
@@ -141,5 +146,35 @@ func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+// HandleDeleteServer handles requests to delete a server
+func HandleDeleteServer(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serverIDStr := vars["id"]
+
+	serverId, err := strconv.Atoi(serverIDStr)
+	if err != nil {
+		zap.L().Error("Invalid server ID", zap.Error(err))
+		http.Error(w, "Invalid server ID", http.StatusBadRequest)
+		return
+	}
+
+	if removeServerFunc == nil {
+		zap.L().Error("Remove server function not set")
+		http.Error(w, "Server configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := removeServerFunc(serverId); err != nil {
+		zap.L().Error("Failed to remove server", zap.Error(err))
+		http.Error(w, "Failed to remove server", http.StatusInternalServerError)
+		return
+	}
+
+	// Broadcast updated server list
+	servers := config.AppEnv.Servers.ToServerResponses()
+	BroadcastServers(servers)
 	w.WriteHeader(http.StatusOK)
 }

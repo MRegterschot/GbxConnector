@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/MRegterschot/GbxConnector/config"
-	"github.com/MRegterschot/GbxConnector/handlers"
-	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/listeners"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
@@ -97,45 +95,4 @@ func StartReconnectLoop(ctx context.Context, server *structs.Server) {
 			}
 		}
 	}()
-}
-
-// AddServer adds a new server to the configuration and sets it up
-func AddServer(server *structs.Server) error {
-	if server.Id == 0 {
-		maxID := 0
-		for _, s := range config.AppEnv.Servers {
-			if s.Host == server.Host && s.XMLRPCPort == server.XMLRPCPort {
-				zap.L().Error("Server already exists", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
-				return errors.New("server already exists")
-			}
-
-			if s.Id > maxID {
-				maxID = s.Id
-			}
-		}
-		server.Id = maxID + 1
-	}
-
-	server.IsLocal = lib.IsLocalHostname(server.Host)
-
-	config.AppEnv.Servers = append(config.AppEnv.Servers, server)
-	if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
-		zap.L().Error("Failed to write servers.json", zap.Error(err))
-		return err
-	}
-
-	zap.L().Info("New server added", zap.Int("server_id", server.Id))
-
-	GetClient(server)
-	handlers.GetListenerSocket(server.Id)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	server.Ctx = ctx
-	server.CancelFunc = cancel
-
-	go StartReconnectLoop(ctx, server)
-
-	handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
-
-	return nil
 }

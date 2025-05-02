@@ -20,8 +20,9 @@ func SetupAndRunApp() (*http.Server, error) {
 
 	config.SetupLogger()
 
-	// Register the AddServer function with the handlers package
+	// Register handlers
 	handlers.SetAddServerFunc(AddServer)
+	handlers.SetRemoveServerFunc(DeleteServer)
 
 	zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))
 	for _, server := range config.AppEnv.Servers {
