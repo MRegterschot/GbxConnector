@@ -20,3 +20,18 @@ func ReadFile[T any](path string, dest *T) error {
 	// Return nil if no error occurred
 	return nil
 }
+
+func WriteFile[T any](path string, data *T) error {
+	// Marshal the data into JSON format
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Write the JSON data to the file
+	if err := os.WriteFile(path, jsonData, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}

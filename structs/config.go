@@ -1,22 +1,27 @@
 package structs
 
 import (
+	"context"
 	"time"
 
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
 )
 
 type Server struct {
-	Id          int                  `json:"id"`
-	Name        string               `json:"name"`
-	Description *string              `json:"description"`
-	Host        string               `json:"host"`
-	XMLRPCPort  int                  `json:"xmlrpcPort"`
-	User        string               `json:"user"`
-	Pass        string               `json:"pass"`
-	IsLocal     bool                 `json:"isLocal"`
-	Client      *gbxclient.GbxClient `json:"-"`
-	ActiveMap   string               `json:"activeMap"`
+	Id          int     `json:"id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	Host        string  `json:"host"`
+	XMLRPCPort  int     `json:"xmlrpcPort"`
+	User        string  `json:"user"`
+	Pass        string  `json:"pass"`
+	IsLocal     bool    `json:"isLocal"`
+	ActiveMap   string  `json:"activeMap"`
+
+	// Internal
+	Client     *gbxclient.GbxClient `json:"-"`
+	CancelFunc context.CancelFunc   `json:"-"`
+	Ctx        context.Context      `json:"-"`
 }
 
 type ServerList []*Server

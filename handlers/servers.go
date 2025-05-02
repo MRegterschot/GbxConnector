@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/MRegterschot/GbxConnector/config"
+	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
@@ -98,6 +99,7 @@ func BroadcastServers[T any](msg T) {
 	}
 }
 
+// Handle GET request to retrieve server information
 func HandleGetServers(w http.ResponseWriter, r *http.Request) {
 	servers := config.AppEnv.Servers.ToServerResponses()
 	if err := json.NewEncoder(w).Encode(servers); err != nil {
@@ -105,4 +107,17 @@ func HandleGetServers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode servers response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func HandleAddServer(w http.ResponseWriter, r *http.Request) {
+	var server structs.Server
+	if err := json.NewDecoder(r.Body).Decode(&server); err != nil {
+		zap.L().Error("Failed to decode server", zap.Error(err))
+		http.Error(w, "Failed to decode server", http.StatusBadRequest)
+		return
+	}
+
+	config.AppEnv.Servers = append(config.AppEnv.Servers, &server)
+	BroadcastServers(config.AppEnv.Servers.ToServerResponses())
+	w.WriteHeader(http.StatusCreated)
 }

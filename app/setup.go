@@ -11,11 +11,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func SetupAndRunApp() error {
+func SetupAndRunApp() (*http.Server, error) {
 	// load env
 	err := config.LoadEnv()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	config.SetupLogger()
@@ -25,10 +25,11 @@ func SetupAndRunApp() error {
 		GetClient(server)
 		handlers.GetListenerSocket(server.Id)
 
-		// Call cancel() to stop the reconnect loop when the context is done
 		ctx, cancel := context.WithCancel(context.Background())
-		StartReconnectLoop(ctx, server)
-		defer cancel()
+		server.Ctx = ctx
+		server.CancelFunc = cancel
+
+		go StartReconnectLoop(ctx, server)
 	}
 
 	if len(config.AppEnv.CorsOrigins) == 0 {
@@ -44,7 +45,18 @@ func SetupAndRunApp() error {
 	// Attach middleware
 	handler := loggingMiddleware(recoveryMiddleware(router))
 
-	port := strconv.Itoa(config.AppEnv.Port)
-	zap.L().Info("Starting server", zap.String("port", port))
-	return http.ListenAndServe(":"+port, handler)
+	srv := &http.Server{
+		Addr:    ":" + strconv.Itoa(config.AppEnv.Port),
+		Handler: handler,
+	}
+
+	// Run HTTP server in a goroutine
+	go func() {
+		zap.L().Info("Starting server", zap.String("port", strconv.Itoa(config.AppEnv.Port)))
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			zap.L().Fatal("HTTP server failed", zap.Error(err))
+		}
+	}()
+
+	return srv, nil
 }
