@@ -70,7 +70,7 @@ func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for {
 			if _, _, err := conn.NextReader(); err != nil {
-				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()))
+				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Int("serverId", serverId))
 				ls.ClientsMu.Lock()
 				delete(ls.Clients, conn)
 				ls.ClientsMu.Unlock()
