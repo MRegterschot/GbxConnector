@@ -30,7 +30,7 @@ func GetListenerSocket(serverId int) *ListenerSocket {
 // WebSocket connection handler
 func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	serverIDStr := vars["serverId"]
+	serverIDStr := vars["id"]
 
 	serverId, err := strconv.Atoi(serverIDStr)
 	if err != nil {

@@ -53,10 +53,12 @@ var serverSocket = &ServerSocket{
 type ServerAdderFunc func(server *structs.Server) (*structs.Server, error)
 type ServerRemoverFunc func(serverId int) error
 type ServerUpdaterFunc func(serverId int, server *structs.Server) (*structs.Server, error)
+type ServersOrderFunc func(order []int) (structs.ServerList, error)
 
 var addServerFunc ServerAdderFunc
 var removeServerFunc ServerRemoverFunc
 var updateServerFunc ServerUpdaterFunc
+var orderServersFunc ServersOrderFunc
 
 func SetAddServerFunc(fn ServerAdderFunc) {
 	addServerFunc = fn
@@ -68,6 +70,10 @@ func SetRemoveServerFunc(fn ServerRemoverFunc) {
 
 func SetUpdateServerFunc(fn ServerUpdaterFunc) {
 	updateServerFunc = fn
+}
+
+func SetOrderServersFunc(fn ServersOrderFunc) {
+	orderServersFunc = fn
 }
 
 // WebSocket connection handler
@@ -146,7 +152,7 @@ func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newServer, err := addServerFunc(&server) 
+	newServer, err := addServerFunc(&server)
 
 	if err != nil {
 		zap.L().Error("Failed to add server", zap.Error(err))
@@ -228,6 +234,36 @@ func HandleUpdateServer(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(updatedServer.ToServerResponse()); err != nil {
 		zap.L().Error("Failed to encode server response", zap.Error(err))
 		http.Error(w, "Failed to encode server response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// HandleOrderServers handles requests to order servers
+func HandleOrderServers(w http.ResponseWriter, r *http.Request) {
+	var order []int
+	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+		zap.L().Error("Failed to decode order", zap.Error(err))
+		http.Error(w, "Failed to decode order", http.StatusBadRequest)
+		return
+	}
+
+	if orderServersFunc == nil {
+		zap.L().Error("Order server function not set")
+		http.Error(w, "Server configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	orderedServers, err := orderServersFunc(order)
+	if err != nil {
+		zap.L().Error("Failed to order servers", zap.Error(err))
+		http.Error(w, "Failed to order servers", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(orderedServers.ToServerResponses()); err != nil {
+		zap.L().Error("Failed to encode ordered servers response", zap.Error(err))
+		http.Error(w, "Failed to encode ordered servers response", http.StatusInternalServerError)
 		return
 	}
 }

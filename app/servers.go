@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"slices"
 
@@ -111,4 +112,49 @@ func UpdateServer(serverId int, server *structs.Server) (*structs.Server, error)
 		}
 	}
 	return nil, errors.New("server not found")
+}
+
+func OrderServers(serverIds []int) (structs.ServerList, error) {
+	fmt.Println("Ordering servers", serverIds)
+	// Check if all server IDs are valid
+	for _, serverId := range serverIds {
+		found := false
+		for _, server := range config.AppEnv.Servers {
+			if server.Id == serverId {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, errors.New("server not found")
+		}
+	}
+
+	// Update the order of the servers
+	newServers := make([]*structs.Server, len(serverIds))
+	for i, serverId := range serverIds {
+		for _, server := range config.AppEnv.Servers {
+			if server.Id == serverId {
+				newServers[i] = server
+				break
+			}
+		}
+	}
+
+	// Update the ids so its in order
+	for i, server := range newServers {
+		server.Id = i
+	}
+
+	config.AppEnv.Servers = newServers
+
+	if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
+		zap.L().Error("Failed to write servers.json", zap.Error(err))
+		return nil, err
+	}
+
+	// Broadcast the updated server list
+	handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
+	zap.L().Info("Server order updated", zap.Ints("server_ids", serverIds))
+	return config.AppEnv.Servers, nil
 }
