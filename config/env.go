@@ -23,7 +23,9 @@ func LoadEnv() error {
 
 	servers := make([]*structs.Server, 0)
 	if err = lib.ReadFile("./servers.json", &servers); err != nil {
-		return err
+		if err = lib.CreateIfNotExists("./servers.json"); err != nil {
+			return err
+		}
 	}
 
 	// Check if the server is local and check if we can connect

@@ -35,3 +35,17 @@ func WriteFile[T any](path string, data *T) error {
 
 	return nil
 }
+
+func CreateIfNotExists(path string) error {
+	// Check if the file exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// Create the file if it doesn't exist
+		file, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+	}
+	// Return nil if no error occurred
+	return nil
+}
