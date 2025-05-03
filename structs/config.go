@@ -31,6 +31,8 @@ type Env struct {
 	CorsOrigins       []string
 	LogLevel          string
 	ReconnectInterval time.Duration
+	JwtSecret         string
+	InternalApiKey    string
 	Servers           ServerList `json:"servers"`
 }
 

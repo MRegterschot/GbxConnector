@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MRegterschot/GbxConnector/handlers"
+	"github.com/MRegterschot/GbxConnector/middleware"
 	"github.com/gorilla/mux"
 )
 
@@ -14,12 +15,17 @@ func SetupRoutes(r *mux.Router) {
 		w.Write([]byte("OK"))
 	}).Methods("GET")
 
-	r.HandleFunc("/ws/servers", handlers.HandleServersConnection).Methods("GET")
-	r.HandleFunc("/servers", handlers.HandleGetServers).Methods("GET")
-	r.HandleFunc("/servers", handlers.HandleAddServer).Methods("POST")
-	r.HandleFunc("/servers/{id:[0-9]+}", handlers.HandleDeleteServer).Methods("DELETE")
-	r.HandleFunc("/servers/{id:[0-9]+}", handlers.HandleUpdateServer).Methods("PUT")
-	r.HandleFunc("/servers/order", handlers.HandleOrderServers).Methods("PUT")
+	adminOnly := middleware.RequireRoles("admin")
+	moderatorOrAdmin := middleware.RequireRoles("moderator", "admin")
 
-	r.HandleFunc("/ws/listeners/{id:[0-9]+}", handlers.HandleListenerConnection).Methods("GET")
+	r.HandleFunc("/auth", handlers.HandleAuth).Methods("POST")
+
+	r.Handle("/ws/servers", moderatorOrAdmin(http.HandlerFunc(handlers.HandleServersConnection))).Methods("GET")
+	r.Handle("/servers", moderatorOrAdmin(http.HandlerFunc(handlers.HandleGetServers))).Methods("GET")
+	r.Handle("/servers", adminOnly(http.HandlerFunc(handlers.HandleAddServer))).Methods("POST")
+	r.Handle("/servers/{id:[0-9]+}", adminOnly(http.HandlerFunc(handlers.HandleDeleteServer))).Methods("DELETE")
+	r.Handle("/servers/{id:[0-9]+}", adminOnly(http.HandlerFunc(handlers.HandleUpdateServer))).Methods("PUT")
+	r.Handle("/servers/order", adminOnly(http.HandlerFunc(handlers.HandleOrderServers))).Methods("PUT")
+
+	r.Handle("/ws/listeners/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandleListenerConnection))).Methods("GET")
 }

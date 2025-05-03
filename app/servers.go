@@ -115,7 +115,6 @@ func UpdateServer(serverId int, server *structs.Server) (*structs.Server, error)
 }
 
 func OrderServers(serverIds []int) (structs.ServerList, error) {
-	fmt.Println("Ordering servers", serverIds)
 	// Check if all server IDs are valid
 	for _, serverId := range serverIds {
 		found := false
