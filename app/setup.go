@@ -49,7 +49,7 @@ func SetupAndRunApp() (*http.Server, error) {
 	SetupRoutes(router)
 
 	// Attach middleware
-	handler := loggingMiddleware(recoveryMiddleware(router))
+	handler := loggingMiddleware(recoveryMiddleware(corsMiddleware(router)))
 
 	srv := &http.Server{
 		Addr:    ":" + strconv.Itoa(config.AppEnv.Port),
