@@ -22,7 +22,6 @@ var upgrader = websocket.Upgrader{
 
 		// If no origin header is present, deny the request
 		if origin == "" {
-			zap.L().Debug("WebSocket request missing Origin header")
 			return false
 		}
 
