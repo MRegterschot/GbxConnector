@@ -4,7 +4,8 @@
     "name": "Big Massive Server",
     "description": "This is a local server for testing purposes.",
     "host": "127.0.0.1",
-    "xmlrpc_port": 5000,
+    "xmlrpcPort": 5000,
+    "fmPort": 3300,
     "user": "SuperAdmin",
     "password": "SuperAdmin"
   },
@@ -13,7 +14,8 @@
     "name": "Ik zit in de kast",
     "description": "This is a local server for testing purposes.",
     "host": "localhost",
-    "xmlrpc_port": 5001,
+    "xmlrpcPort": 5001,
+    "fmPort": 3301,
     "user": "SuperAdmin",
     "password": "SuperAdmin"
   }
