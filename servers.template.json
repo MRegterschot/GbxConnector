@@ -5,6 +5,7 @@
     "description": "This is a local server for testing purposes.",
     "host": "127.0.0.1",
     "xmlrpcPort": 5000,
+    "fmHost": "127.0.0.1",
     "fmPort": 3300,
     "user": "SuperAdmin",
     "password": "SuperAdmin"
@@ -15,6 +16,7 @@
     "description": "This is a local server for testing purposes.",
     "host": "localhost",
     "xmlrpcPort": 5001,
+    "fmHost": "localhost",
     "fmPort": 3301,
     "user": "SuperAdmin",
     "password": "SuperAdmin"
