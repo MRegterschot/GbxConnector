@@ -13,7 +13,7 @@ type Server struct {
 	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
-	FMPort      int     `json:"fmPort"`
+	FMPort      *int    `json:"fmPort,omitempty"`
 	User        string  `json:"user"`
 	Pass        string  `json:"pass"`
 
@@ -43,7 +43,7 @@ type ServerResponse struct {
 	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
-	FMPort      int     `json:"fmPort"`
+	FMPort      *int    `json:"fmPort,omitempty"`
 	User        string  `json:"user"`
 	Pass        string  `json:"pass"`
 	IsLocal     bool    `json:"isLocal"`
