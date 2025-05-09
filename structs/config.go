@@ -13,9 +13,10 @@ type Server struct {
 	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
-	FMPort      *int    `json:"fmPort,omitempty"`
 	User        string  `json:"user"`
 	Pass        string  `json:"pass"`
+	FMHost      *string `json:"fmHost,omitempty"`
+	FMPort      *int    `json:"fmPort,omitempty"`
 
 	// Internal
 	IsLocal    bool                 `json:"-"`
@@ -43,9 +44,10 @@ type ServerResponse struct {
 	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
 	XMLRPCPort  int     `json:"xmlrpcPort"`
-	FMPort      *int    `json:"fmPort,omitempty"`
 	User        string  `json:"user"`
 	Pass        string  `json:"pass"`
+	FMHost      *string `json:"fmHost,omitempty"`
+	FMPort      *int    `json:"fmPort,omitempty"`
 	IsLocal     bool    `json:"isLocal"`
 	IsConnected bool    `json:"isConnected"`
 }
@@ -62,9 +64,10 @@ func (s *Server) ToServerResponse() ServerResponse {
 		Description: s.Description,
 		Host:        s.Host,
 		XMLRPCPort:  s.XMLRPCPort,
-		FMPort:      s.FMPort,
 		User:        s.User,
 		Pass:        s.Pass,
+		FMHost:      s.FMHost,
+		FMPort:      s.FMPort,
 		IsLocal:     s.IsLocal,
 		IsConnected: isConnected,
 	}
@@ -84,9 +87,10 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 			Description: s.Description,
 			Host:        s.Host,
 			XMLRPCPort:  s.XMLRPCPort,
-			FMPort:      s.FMPort,
 			User:        s.User,
 			Pass:        s.Pass,
+			FMHost:      s.FMHost,
+			FMPort:      s.FMPort,
 			IsLocal:     s.IsLocal,
 			IsConnected: isConnected,
 		}
