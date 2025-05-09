@@ -26,18 +26,20 @@ func SetupAndRunApp() (*http.Server, error) {
 	handlers.SetUpdateServerFunc(UpdateServer)
 	handlers.SetOrderServersFunc(OrderServers)
 
-	zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))
-	for _, server := range config.AppEnv.Servers {
-		GetClient(server)
-		handlers.GetListenerSocket(server.Id)
-
-		ctx, cancel := context.WithCancel(context.Background())
-		server.Ctx = ctx
-		server.CancelFunc = cancel
-
-		go StartReconnectLoop(ctx, server)
-	}
-
+	go func() {
+		zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))
+		for _, server := range config.AppEnv.Servers {
+			GetClient(server)
+			handlers.GetListenerSocket(server.Id)
+			
+			ctx, cancel := context.WithCancel(context.Background())
+			server.Ctx = ctx
+			server.CancelFunc = cancel
+			
+			go StartReconnectLoop(ctx, server)
+		}
+	}()
+	
 	if len(config.AppEnv.CorsOrigins) == 0 {
 		zap.L().Warn("No CORS origins configured, allowing all origins")
 	}
