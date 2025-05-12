@@ -3,24 +3,19 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"sync"
 
 	"github.com/MRegterschot/GbxConnector/config"
+	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
 
-type ListenerSocket struct {
-	Clients   map[*websocket.Conn]bool // Connected clients
-	ClientsMu sync.Mutex
-}
+var listenerSockets = make(map[int]*structs.SocketClients) // Map of socket clients by server ID
 
-var listenerSockets = make(map[int]*ListenerSocket) // Map of listener sockets by server ID
-
-func GetListenerSocket(serverId int) *ListenerSocket {
+func GetListenerSocket(serverId int) *structs.SocketClients {
 	if _, ok := listenerSockets[serverId]; !ok {
-		listenerSockets[serverId] = &ListenerSocket{
+		listenerSockets[serverId] = &structs.SocketClients{
 			Clients: make(map[*websocket.Conn]bool),
 		}
 	}
