@@ -90,6 +90,18 @@ func (pl *PlayersListener) SyncPlayerList() {
 		return
 	}
 
+	mainServerInfo, err := pl.Server.Client.GetMainServerPlayerInfo()
+	if err != nil {
+		zap.L().Error("Failed to get main server info", zap.Error(err))
+		return
+	}
+
+	for i := len(players) - 1; i >= 0; i-- {
+		if players[i].Login == mainServerInfo.Login || players[i].Login == "" {
+			players = slices.Delete(players, i, i+1)
+		}
+	}
+
 	pl.Server.ActivePlayers = players
 
 	handlers.BroadcastPlayers(pl.Server.Id, map[string][]gbxstructs.TMPlayerInfo{
