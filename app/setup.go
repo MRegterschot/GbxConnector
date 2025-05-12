@@ -31,6 +31,7 @@ func SetupAndRunApp() (*http.Server, error) {
 		for _, server := range config.AppEnv.Servers {
 			GetClient(server)
 			handlers.GetListenerSocket(server.Id)
+			handlers.GetPlayersSocket(server.Id)
 			
 			ctx, cancel := context.WithCancel(context.Background())
 			server.Ctx = ctx

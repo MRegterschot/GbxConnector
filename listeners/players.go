@@ -1,21 +1,21 @@
 package listeners
 
 import (
-	"fmt"
+	"slices"
 
+	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/events"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
-	gbxStructs "github.com/MRegterschot/GbxRemoteGo/structs"
+	gbxstructs "github.com/MRegterschot/GbxRemoteGo/structs"
 	"go.uber.org/zap"
-	"slices"
 )
 
 type PlayersListener struct {
 	Server *structs.Server
 }
 
-func AddPlayersListeners(server *structs.Server) {
+func AddPlayersListeners(server *structs.Server) *PlayersListener {
 	pl := &PlayersListener{Server: server}
 	server.Client.OnPlayerConnect = append(server.Client.OnPlayerConnect, gbxclient.GbxCallbackStruct[events.PlayerConnectEventArgs]{
 		Key:  "PlayerConnectListener",
@@ -29,6 +29,8 @@ func AddPlayersListeners(server *structs.Server) {
 		Key:  "PlayerInfoChangedListener",
 		Call: pl.onPlayerInfoChanged,
 	})
+
+	return pl
 }
 
 func (pl *PlayersListener) onPlayerConnect(playerConnectEvent events.PlayerConnectEventArgs) {
@@ -39,6 +41,10 @@ func (pl *PlayersListener) onPlayerConnect(playerConnectEvent events.PlayerConne
 	}
 
 	pl.Server.ActivePlayers = append(pl.Server.ActivePlayers, playerInfo)
+
+	handlers.BroadcastPlayers(pl.Server.Id, map[string]gbxstructs.TMPlayerInfo{
+		"connect": playerInfo,
+	})
 }
 
 func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDisconnectEventArgs) {
@@ -49,13 +55,16 @@ func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.Playe
 		}
 	}
 
-	fmt.Println("Player disconnected:", playerDisconnectEvent.Login)
+	handlers.BroadcastPlayers(pl.Server.Id, map[string]string{
+		"disconnect": playerDisconnectEvent.Login,
+	})
 }
 
 func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.PlayerInfoChangedEventArgs) {
+	var playerInfo gbxstructs.TMPlayerInfo
 	for i, player := range pl.Server.ActivePlayers {
 		if player.Login == playerInfoChangedEvent.PlayerInfo.Login {
-			pl.Server.ActivePlayers[i] = gbxStructs.TMPlayerInfo{
+			playerInfo = gbxstructs.TMPlayerInfo{
 				Login:           playerInfoChangedEvent.PlayerInfo.Login,
 				NickName:        playerInfoChangedEvent.PlayerInfo.NickName,
 				PlayerId:        playerInfoChangedEvent.PlayerInfo.PlayerId,
@@ -64,9 +73,26 @@ func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.Pla
 				LadderRanking:   playerInfoChangedEvent.PlayerInfo.LadderRanking,
 				Flags:           playerInfoChangedEvent.PlayerInfo.Flags,
 			}
+			pl.Server.ActivePlayers[i] = playerInfo
 			break
 		}
 	}
 
-	fmt.Println("Player info changed:", playerInfoChangedEvent.PlayerInfo.Login)
+	handlers.BroadcastPlayers(pl.Server.Id, map[string]gbxstructs.TMPlayerInfo{
+		"infoChanged": playerInfo,
+	})
+}
+
+func (pl *PlayersListener) SyncPlayerList() {
+	players, err := pl.Server.Client.GetPlayerList(1000, 0)
+	if err != nil {
+		zap.L().Error("Failed to get player list", zap.Error(err))
+		return
+	}
+
+	pl.Server.ActivePlayers = players
+
+	handlers.BroadcastPlayers(pl.Server.Id, map[string][]gbxstructs.TMPlayerInfo{
+		"playerList": players,
+	})
 }

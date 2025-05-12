@@ -28,4 +28,5 @@ func SetupRoutes(r *mux.Router) {
 	r.Handle("/servers/order", adminOnly(http.HandlerFunc(handlers.HandleOrderServers))).Methods("PUT")
 
 	r.Handle("/ws/listeners/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandleListenerConnection))).Methods("GET")
+	r.Handle("/ws/players/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandlePlayersConnection))).Methods("GET")
 }
