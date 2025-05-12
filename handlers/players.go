@@ -6,7 +6,6 @@ import (
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/structs"
-	gbxstructs "github.com/MRegterschot/GbxRemoteGo/structs"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -47,7 +46,7 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	ps.ClientsMu.Unlock()
 
 	// Get current active map of the server
-	activePlayers := make([]gbxstructs.TMPlayerInfo, 0)
+	activePlayers := make([]structs.PlayerInfo, 0)
 	for _, server := range config.AppEnv.Servers {
 		if server.Id == serverId {
 			if server.ActivePlayers != nil {
@@ -58,7 +57,7 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send initial message to the client
-	if err := conn.WriteJSON(map[string][]gbxstructs.TMPlayerInfo{
+	if err := conn.WriteJSON(map[string][]structs.PlayerInfo{
 		"playerList": activePlayers,
 	}); err != nil {
 		zap.L().Error("Failed to send initial message to client", zap.Error(err))

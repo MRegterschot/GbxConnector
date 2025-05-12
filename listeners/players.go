@@ -7,7 +7,6 @@ import (
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/events"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
-	gbxstructs "github.com/MRegterschot/GbxRemoteGo/structs"
 	"go.uber.org/zap"
 )
 
@@ -40,10 +39,10 @@ func (pl *PlayersListener) onPlayerConnect(playerConnectEvent events.PlayerConne
 		return
 	}
 
-	pl.Server.ActivePlayers = append(pl.Server.ActivePlayers, playerInfo)
+	pl.Server.ActivePlayers = append(pl.Server.ActivePlayers, structs.ToPlayerInfo(playerInfo))
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string]gbxstructs.TMPlayerInfo{
-		"connect": playerInfo,
+	handlers.BroadcastPlayers(pl.Server.Id, map[string]structs.PlayerInfo{
+		"connect": structs.ToPlayerInfo(playerInfo),
 	})
 }
 
@@ -61,24 +60,27 @@ func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.Playe
 }
 
 func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.PlayerInfoChangedEventArgs) {
-	var playerInfo gbxstructs.TMPlayerInfo
+
+	var playerInfo structs.PlayerInfo
 	for i, player := range pl.Server.ActivePlayers {
 		if player.Login == playerInfoChangedEvent.PlayerInfo.Login {
-			playerInfo = gbxstructs.TMPlayerInfo{
+			playerInfo = structs.PlayerInfo{
 				Login:           playerInfoChangedEvent.PlayerInfo.Login,
 				NickName:        playerInfoChangedEvent.PlayerInfo.NickName,
 				PlayerId:        playerInfoChangedEvent.PlayerInfo.PlayerId,
 				TeamId:          playerInfoChangedEvent.PlayerInfo.TeamId,
 				SpectatorStatus: playerInfoChangedEvent.PlayerInfo.SpectatorStatus,
-				LadderRanking:   playerInfoChangedEvent.PlayerInfo.LadderRanking,
-				Flags:           playerInfoChangedEvent.PlayerInfo.Flags,
 			}
 			pl.Server.ActivePlayers[i] = playerInfo
 			break
 		}
 	}
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string]gbxstructs.TMPlayerInfo{
+	if playerInfo.Login == "" {
+		return
+	}
+
+	handlers.BroadcastPlayers(pl.Server.Id, map[string]structs.PlayerInfo{
 		"infoChanged": playerInfo,
 	})
 }
@@ -96,15 +98,18 @@ func (pl *PlayersListener) SyncPlayerList() {
 		return
 	}
 
-	for i := len(players) - 1; i >= 0; i-- {
-		if players[i].Login == mainServerInfo.Login || players[i].Login == "" {
-			players = slices.Delete(players, i, i+1)
+	var playerList []structs.PlayerInfo
+	for _, player := range players {
+		if player.Login == mainServerInfo.Login || player.Login == "" {
+			continue
 		}
+
+		playerList = append(playerList, structs.ToPlayerInfo(player))
 	}
 
-	pl.Server.ActivePlayers = players
+	pl.Server.ActivePlayers = playerList
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string][]gbxstructs.TMPlayerInfo{
-		"playerList": players,
+	handlers.BroadcastPlayers(pl.Server.Id, map[string][]structs.PlayerInfo{
+		"playerList": playerList,
 	})
 }

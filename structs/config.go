@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
-	"github.com/MRegterschot/GbxRemoteGo/structs"
 )
 
 type Server struct {
@@ -19,11 +18,11 @@ type Server struct {
 	FMUrl       *string `json:"fmUrl,omitempty"`
 
 	// Internal
-	ActiveMap     string                 `json:"-"`
-	ActivePlayers []structs.TMPlayerInfo `json:"-"`
-	Client        *gbxclient.GbxClient   `json:"-"`
-	CancelFunc    context.CancelFunc     `json:"-"`
-	Ctx           context.Context        `json:"-"`
+	ActiveMap     string               `json:"-"`
+	ActivePlayers []PlayerInfo         `json:"-"`
+	Client        *gbxclient.GbxClient `json:"-"`
+	CancelFunc    context.CancelFunc   `json:"-"`
+	Ctx           context.Context      `json:"-"`
 }
 
 type ServerList []*Server
