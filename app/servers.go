@@ -46,8 +46,6 @@ func AddServer(server *structs.Server) (*structs.Server, error) {
 		server.Id = maxID + 1
 	}
 
-	server.IsLocal = lib.IsLocalHostname(server.Host)
-
 	config.AppEnv.Servers = append(config.AppEnv.Servers, server)
 	if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
 		zap.L().Error("Failed to write servers.json", zap.Error(err))
@@ -91,7 +89,6 @@ func UpdateServer(serverId int, server *structs.Server) (*structs.Server, error)
 	for i, s := range config.AppEnv.Servers {
 		if s.Id == serverId {
 			server.Id = serverId
-			server.IsLocal = lib.IsLocalHostname(server.Host)
 			config.AppEnv.Servers[i] = server
 			if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
 				zap.L().Error("Failed to write servers.json", zap.Error(err))

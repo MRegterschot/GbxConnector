@@ -18,7 +18,6 @@ type Server struct {
 	FMUrl       *string `json:"fmUrl,omitempty"`
 
 	// Internal
-	IsLocal    bool                 `json:"-"`
 	ActiveMap  string               `json:"-"`
 	Client     *gbxclient.GbxClient `json:"-"`
 	CancelFunc context.CancelFunc   `json:"-"`
@@ -46,7 +45,6 @@ type ServerResponse struct {
 	User        string  `json:"user"`
 	Pass        string  `json:"pass"`
 	FMUrl       *string `json:"fmUrl,omitempty"`
-	IsLocal     bool    `json:"isLocal"`
 	IsConnected bool    `json:"isConnected"`
 }
 
@@ -65,7 +63,6 @@ func (s *Server) ToServerResponse() ServerResponse {
 		User:        s.User,
 		Pass:        s.Pass,
 		FMUrl:       s.FMUrl,
-		IsLocal:     s.IsLocal,
 		IsConnected: isConnected,
 	}
 }
@@ -87,7 +84,6 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 			User:        s.User,
 			Pass:        s.Pass,
 			FMUrl:       s.FMUrl,
-			IsLocal:     s.IsLocal,
 			IsConnected: isConnected,
 		}
 	}

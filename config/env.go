@@ -28,11 +28,6 @@ func LoadEnv() error {
 		}
 	}
 
-	// Check if the server is local and check if we can connect
-	for i, server := range servers {
-		servers[i].IsLocal = lib.IsLocalHostname(server.Host)
-	}
-
 	reconnectInterval, err := strconv.Atoi(os.Getenv("SERVER_RECONNECT_INTERVAL"))
 	if err != nil {
 		reconnectInterval = 5
