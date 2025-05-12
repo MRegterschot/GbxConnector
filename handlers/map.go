@@ -11,19 +11,19 @@ import (
 	"go.uber.org/zap"
 )
 
-var listenerSockets = make(map[int]*structs.SocketClients) // Map of socket clients by server ID
+var mapSockets = make(map[int]*structs.SocketClients) // Map of socket clients by server ID
 
-func GetListenerSocket(serverId int) *structs.SocketClients {
-	if _, ok := listenerSockets[serverId]; !ok {
-		listenerSockets[serverId] = &structs.SocketClients{
+func GetMapSocket(serverId int) *structs.SocketClients {
+	if _, ok := mapSockets[serverId]; !ok {
+		mapSockets[serverId] = &structs.SocketClients{
 			Clients: make(map[*websocket.Conn]bool),
 		}
 	}
-	return listenerSockets[serverId]
+	return mapSockets[serverId]
 }
 
 // WebSocket connection handler
-func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
+func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	serverIDStr := vars["id"]
 
@@ -40,10 +40,10 @@ func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save connection
-	ls := GetListenerSocket(serverId)
-	ls.ClientsMu.Lock()
-	ls.Clients[conn] = true
-	ls.ClientsMu.Unlock()
+	ms := GetMapSocket(serverId)
+	ms.ClientsMu.Lock()
+	ms.Clients[conn] = true
+	ms.ClientsMu.Unlock()
 
 	// Get current active map of the server
 	var activeMap string
@@ -66,9 +66,9 @@ func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 		for {
 			if _, _, err := conn.NextReader(); err != nil {
 				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Int("serverId", serverId))
-				ls.ClientsMu.Lock()
-				delete(ls.Clients, conn)
-				ls.ClientsMu.Unlock()
+				ms.ClientsMu.Lock()
+				delete(ms.Clients, conn)
+				ms.ClientsMu.Unlock()
 				conn.Close()
 				break
 			}
@@ -77,21 +77,21 @@ func HandleListenerConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 // Broadcast message to all connected clients
-func BroadcastListener(serverId int, message any) {
-	ls := GetListenerSocket(serverId)
-	if ls == nil {
-		zap.L().Error("Listener socket not found", zap.Int("serverId", serverId))
+func BroadcastMap(serverId int, message any) {
+	ms := GetMapSocket(serverId)
+	if ms == nil {
+		zap.L().Error("Map socket not found", zap.Int("serverId", serverId))
 		return
 	}
 
-	ls.ClientsMu.Lock()
-	defer ls.ClientsMu.Unlock()
+	ms.ClientsMu.Lock()
+	defer ms.ClientsMu.Unlock()
 
-	for conn := range ls.Clients {
+	for conn := range ms.Clients {
 		if err := conn.WriteJSON(message); err != nil {
 			zap.L().Error("Failed to send message to client", zap.Error(err))
 			conn.Close()
-			delete(ls.Clients, conn)
+			delete(ms.Clients, conn)
 		}
 	}
 }

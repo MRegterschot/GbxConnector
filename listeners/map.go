@@ -26,7 +26,7 @@ func (ml *MapListener) onEndMap(data any) {
 
 	ml.Server.ActiveMap = event.Map.UId
 
-	handlers.BroadcastListener(ml.Server.Id, map[string]string{
+	handlers.BroadcastMap(ml.Server.Id, map[string]string{
 		"endMap": event.Map.UId,
 	})
 }
@@ -40,7 +40,7 @@ func (ml *MapListener) onStartMap(data any) {
 
 	ml.Server.ActiveMap = event.Map.UId
 
-	handlers.BroadcastListener(ml.Server.Id, map[string]string{
+	handlers.BroadcastMap(ml.Server.Id, map[string]string{
 		"startMap": event.Map.UId,
 	})
 }

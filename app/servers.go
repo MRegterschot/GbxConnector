@@ -55,7 +55,8 @@ func AddServer(server *structs.Server) (*structs.Server, error) {
 	zap.L().Info("New server added", zap.Int("server_id", server.Id))
 
 	GetClient(server)
-	handlers.GetListenerSocket(server.Id)
+	handlers.GetMapSocket(server.Id)
+	handlers.GetPlayersSocket(server.Id)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	server.Ctx = ctx
@@ -97,7 +98,8 @@ func UpdateServer(serverId int, server *structs.Server) (*structs.Server, error)
 			zap.L().Info("Server updated", zap.Int("server_id", serverId))
 			ShutdownServer(s)
 			GetClient(server)
-			handlers.GetListenerSocket(server.Id)
+			handlers.GetMapSocket(server.Id)
+			handlers.GetPlayersSocket(server.Id)
 			ctx, cancel := context.WithCancel(context.Background())
 			server.Ctx = ctx
 			server.CancelFunc = cancel
