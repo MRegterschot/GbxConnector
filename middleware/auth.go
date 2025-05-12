@@ -14,7 +14,6 @@ type contextKey string
 const UserContextKey = contextKey("user")
 
 // RequireRoles returns a middleware that checks for valid JWT and required roles
-// RequireRoles returns a middleware that checks for valid JWT and required roles
 func RequireRoles(allowedRoles ...string) func(http.Handler) http.Handler {
 	roleSet := make(map[string]bool)
 	for _, role := range allowedRoles {
@@ -26,6 +25,7 @@ func RequireRoles(allowedRoles ...string) func(http.Handler) http.Handler {
 			authHeader := r.Header.Get("Authorization")
 			token := lib.ExtractBearerToken(authHeader)
 
+			
 			// If token not in header, try query param
 			if token == "" {
 				token = r.URL.Query().Get("token")
