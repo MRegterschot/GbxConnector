@@ -39,7 +39,7 @@ func (pl *PlayersListener) onPlayerConnect(playerConnectEvent events.PlayerConne
 		return
 	}
 
-	pl.Server.ActivePlayers = append(pl.Server.ActivePlayers, structs.ToPlayerInfo(playerInfo))
+	pl.Server.Info.ActivePlayers = append(pl.Server.Info.ActivePlayers, structs.ToPlayerInfo(playerInfo))
 
 	handlers.BroadcastPlayers(pl.Server.Id, map[string]structs.PlayerInfo{
 		"connect": structs.ToPlayerInfo(playerInfo),
@@ -47,9 +47,9 @@ func (pl *PlayersListener) onPlayerConnect(playerConnectEvent events.PlayerConne
 }
 
 func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDisconnectEventArgs) {
-	for i, player := range pl.Server.ActivePlayers {
+	for i, player := range pl.Server.Info.ActivePlayers {
 		if player.Login == playerDisconnectEvent.Login {
-			pl.Server.ActivePlayers = slices.Delete(pl.Server.ActivePlayers, i, i+1)
+			pl.Server.Info.ActivePlayers = slices.Delete(pl.Server.Info.ActivePlayers, i, i+1)
 			break
 		}
 	}
@@ -62,7 +62,7 @@ func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.Playe
 func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.PlayerInfoChangedEventArgs) {
 
 	var playerInfo structs.PlayerInfo
-	for i, player := range pl.Server.ActivePlayers {
+	for i, player := range pl.Server.Info.ActivePlayers {
 		if player.Login == playerInfoChangedEvent.PlayerInfo.Login {
 			playerInfo = structs.PlayerInfo{
 				Login:           playerInfoChangedEvent.PlayerInfo.Login,
@@ -71,7 +71,7 @@ func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.Pla
 				TeamId:          playerInfoChangedEvent.PlayerInfo.TeamId,
 				SpectatorStatus: playerInfoChangedEvent.PlayerInfo.SpectatorStatus,
 			}
-			pl.Server.ActivePlayers[i] = playerInfo
+			pl.Server.Info.ActivePlayers[i] = playerInfo
 			break
 		}
 	}
@@ -107,7 +107,7 @@ func (pl *PlayersListener) SyncPlayerList() {
 		playerList = append(playerList, structs.ToPlayerInfo(player))
 	}
 
-	pl.Server.ActivePlayers = playerList
+	pl.Server.Info.ActivePlayers = playerList
 
 	handlers.BroadcastPlayers(pl.Server.Id, map[string][]structs.PlayerInfo{
 		"playerList": playerList,

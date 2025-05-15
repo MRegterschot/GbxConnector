@@ -49,8 +49,8 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	activePlayers := make([]structs.PlayerInfo, 0)
 	for _, server := range config.AppEnv.Servers {
 		if server.Id == serverId {
-			if server.ActivePlayers != nil {
-				activePlayers = server.ActivePlayers
+			if server.Info.ActivePlayers != nil {
+				activePlayers = server.Info.ActivePlayers
 			}
 			break
 		}
@@ -61,6 +61,9 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 		"playerList": activePlayers,
 	}); err != nil {
 		zap.L().Error("Failed to send initial message to client", zap.Error(err))
+		ps.ClientsMu.Lock()
+		delete(ps.Clients, conn)
+		ps.ClientsMu.Unlock()
 		conn.Close()
 		return
 	}

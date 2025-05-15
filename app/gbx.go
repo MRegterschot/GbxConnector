@@ -6,11 +6,16 @@ import (
 	"time"
 
 	"github.com/MRegterschot/GbxConnector/config"
+	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/listeners"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
 	"go.uber.org/zap"
 )
+
+type Client struct {
+	Server *structs.Server
+}
 
 func GetClient(server *structs.Server) error {
 	if server.Client != nil {
@@ -64,7 +69,12 @@ func ConnectClient(server *structs.Server) error {
 		zap.L().Error("Failed to get current map info", zap.Error(err))
 	}
 
-	server.ActiveMap = mapInfo.UId
+	server.Info.ActiveMap = mapInfo.UId
+
+	server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
+		onWarmUpStatus(event, server)
+	})
+	server.Client.TriggerModeScriptEventArray("Trackmania.WarmUp.GetStatus", []string{"gbxconnector"})
 
 	return nil
 }
@@ -99,4 +109,18 @@ func StartReconnectLoop(ctx context.Context, server *structs.Server) {
 			}
 		}
 	}()
+}
+
+func onWarmUpStatus(event any, server *structs.Server) {
+	var status structs.WarmUpStatus
+	if err := lib.ConvertCallbackData(event, &status); err != nil {
+		zap.L().Error("Failed to get callback data", zap.Error(err))
+		return
+	}
+
+	if status.ResponseId != "gbxconnector" {
+		return
+	}
+
+	server.Info.LiveInfo.IsWarmup = status.Active
 }

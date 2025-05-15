@@ -24,6 +24,11 @@ func AddLiveListeners(server *structs.Server) {
 		Call: ll.onPlayerCheckpoint,
 	})
 
+	server.Client.OnPreEndRound = append(server.Client.OnPreEndRound, gbxclient.GbxCallbackStruct[events.ScoresEventArgs]{
+		Key:  "PreEndRoundListener",
+		Call: ll.onPreEndRound,
+	})
+
 	server.Client.OnEndRound = append(server.Client.OnEndRound, gbxclient.GbxCallbackStruct[events.ScoresEventArgs]{
 		Key:  "EndRoundListener",
 		Call: ll.onEndRound,
@@ -61,14 +66,40 @@ func AddLiveListeners(server *structs.Server) {
 }
 
 func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEventArgs) {
-	handlers.BroadcastLive(ll.Server.Id, map[string]any{
-		"finish": playerFinishEvent,
+	playerWaypoint := structs.PlayerWaypoint{
+		Login:       playerFinishEvent.Login,
+		AccountId:   playerFinishEvent.AccountId,
+		Time:        playerFinishEvent.Time,
+		HasFinished: true,
+		Checkpoint:  playerFinishEvent.CheckpointInRace,
+	}
+
+	ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login] = playerWaypoint
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.PlayerWaypoint{
+		"finish": playerWaypoint,
 	})
 }
 
 func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWayPointEventArgs) {
+	playerWaypoint := structs.PlayerWaypoint{
+		Login:       playerCheckpointEvent.Login,
+		AccountId:   playerCheckpointEvent.AccountId,
+		Time:        playerCheckpointEvent.Time,
+		HasFinished: false,
+		Checkpoint:  playerCheckpointEvent.CheckpointInRace,
+	}
+
+	ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login] = playerWaypoint
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.PlayerWaypoint{
+		"checkpoint": playerWaypoint,
+	})
+}
+
+func (ll *LiveListener) onPreEndRound(preEndRoundEvent events.ScoresEventArgs) {
 	handlers.BroadcastLive(ll.Server.Id, map[string]any{
-		"checkpoint": playerCheckpointEvent,
+		"preEndRound": preEndRoundEvent,
 	})
 }
 

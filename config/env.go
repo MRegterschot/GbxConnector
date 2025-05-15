@@ -28,6 +28,12 @@ func LoadEnv() error {
 		}
 	}
 
+	for _, server := range servers {
+		server.Info = &structs.ServerInfo{
+			LiveInfo: &structs.LiveInfo{},
+		}
+	}
+
 	reconnectInterval, err := strconv.Atoi(os.Getenv("SERVER_RECONNECT_INTERVAL"))
 	if err != nil {
 		reconnectInterval = 5

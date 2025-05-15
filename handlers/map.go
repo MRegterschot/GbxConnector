@@ -49,7 +49,7 @@ func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	var activeMap string
 	for _, server := range config.AppEnv.Servers {
 		if server.Id == serverId {
-			activeMap = server.ActiveMap
+			activeMap = server.Info.ActiveMap
 			break
 		}
 	}
@@ -57,6 +57,9 @@ func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	// Send initial message to the client
 	if err := conn.WriteJSON(activeMap); err != nil {
 		zap.L().Error("Failed to send initial message to client", zap.Error(err))
+		ms.ClientsMu.Lock()
+		delete(ms.Clients, conn)
+		ms.ClientsMu.Unlock()
 		conn.Close()
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -43,6 +44,25 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	ls.Clients[conn] = true
 	ls.ClientsMu.Unlock()
 
+	// Get current live info of the server
+	var liveInfo *structs.LiveInfo
+	for _, server := range config.AppEnv.Servers {
+		if server.Id == serverId {
+			liveInfo = server.Info.LiveInfo
+			break
+		}
+	}
+
+	// Send initial message to the client
+	if err := conn.WriteJSON(liveInfo); err != nil {
+		zap.L().Error("Failed to send initial message to client", zap.Error(err))
+		ls.ClientsMu.Lock()
+		delete(ls.Clients, conn)
+		ls.ClientsMu.Unlock()
+		conn.Close()
+		return
+	}
+
 	// Handle disconnection
 	go func() {
 		for {
@@ -58,8 +78,14 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func BroadcastLive(serverId int, message map[string]any) {
+// Broadcast message to all connected clients
+func BroadcastLive(serverId int, message any) {
 	ls := GetLiveSocket(serverId)
+	if ls == nil {
+		zap.L().Error("Live socket not found", zap.Int("serverId", serverId))
+		return
+	}
+
 	ls.ClientsMu.Lock()
 	defer ls.ClientsMu.Unlock()
 

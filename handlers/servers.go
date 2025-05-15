@@ -93,6 +93,9 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 	// Send initial message to the client
 	if err := conn.WriteJSON(config.AppEnv.Servers.ToServerResponses()); err != nil {
 		zap.L().Error("Failed to send initial message to client", zap.Error(err))
+		serverSocket.ClientsMu.Lock()
+		delete(serverSocket.Clients, conn)
+		serverSocket.ClientsMu.Unlock()
 		conn.Close()
 		return
 	}
