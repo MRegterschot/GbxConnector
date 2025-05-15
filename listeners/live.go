@@ -2,16 +2,18 @@ package listeners
 
 import (
 	"github.com/MRegterschot/GbxConnector/handlers"
+	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/events"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
+	"go.uber.org/zap"
 )
 
 type LiveListener struct {
 	Server *structs.Server
 }
 
-func AddLiveListeners(server *structs.Server) {
+func AddLiveListeners(server *structs.Server) *LiveListener {
 	ll := &LiveListener{Server: server}
 
 	server.Client.OnPlayerFinish = append(server.Client.OnPlayerFinish, gbxclient.GbxCallbackStruct[events.PlayerWayPointEventArgs]{
@@ -48,6 +50,8 @@ func AddLiveListeners(server *structs.Server) {
 		Key:  "gbxconnector",
 		Call: ll.onPlayerGiveUp,
 	})
+
+	return ll
 }
 
 func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEventArgs) {
@@ -121,7 +125,7 @@ func (ll *LiveListener) onEndMap(endMapEvent events.MapEventArgs) {
 }
 
 func (ll *LiveListener) onBeginMatch(_ struct{}) {
-	ll.Server.ResetLiveInfo()
+	ll.SyncLiveInfo()
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 		"beginMatch": ll.Server.Info.LiveInfo,
@@ -132,4 +136,128 @@ func (ll *LiveListener) onPlayerGiveUp(playerGiveUpEvent events.PlayerGiveUpEven
 	handlers.BroadcastLive(ll.Server.Id, map[string]string{
 		"giveUp": playerGiveUpEvent.Login,
 	})
+}
+
+func (ll *LiveListener) SyncLiveInfo() {
+	// Set warmup status
+	ll.Server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
+		onWarmUpStatus(event, ll.Server)
+	})
+	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.WarmUp.GetStatus", []string{"gbxconnector"})
+
+	// Set the current game mode
+	mode, err := ll.Server.Client.GetScriptName()
+	if err != nil {
+		zap.L().Error("Failed to get script name", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
+	ll.Server.Info.LiveInfo.Mode = mode.CurrentValue
+
+	mapInfo, err := ll.Server.Client.GetCurrentMapInfo()
+	if err != nil {
+		zap.L().Error("Failed to get current map info", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
+	ll.Server.Info.LiveInfo.CurrentMap = mapInfo.UId
+
+	// Get script settings
+	scriptSettings, err := ll.Server.Client.GetModeScriptSettings()
+	if err != nil {
+		zap.L().Error("Failed to get script settings", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
+	// Set points limit
+	pointsLimit, ok := scriptSettings["S_PointsLimit"].(int)
+	if !ok {
+		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else {
+		ll.Server.Info.LiveInfo.PointsLimit = &pointsLimit
+	}
+
+	// Set rounds limit
+	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
+	if !ok {
+		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else {
+		ll.Server.Info.LiveInfo.RoundsLimit = &roundsLimit
+	}
+
+	// Set map limit
+	mapLimit, ok := scriptSettings["S_MapsPerMatch"].(int)
+	if !ok {
+		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else {
+		ll.Server.Info.LiveInfo.MapLimit = &mapLimit
+	}
+
+	// Set map list
+	mapList, err := ll.Server.Client.GetMapList(1000, 0)
+	if err != nil {
+		zap.L().Error("Failed to get map list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
+	ll.Server.Info.LiveInfo.Maps = make([]string, len(mapList))
+	for i, m := range mapList {
+		ll.Server.Info.LiveInfo.Maps[i] = m.UId
+	}
+
+	ll.Server.Client.AddScriptCallback("Trackmania.Scores", "server", func(event any) {
+		onScores(event, ll.Server)
+	})
+	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
+
+	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
+		Players: make(map[string]structs.PlayerWaypoint),
+	}
+}
+
+func onWarmUpStatus(event any, server *structs.Server) {
+	var status structs.WarmUpStatus
+	if err := lib.ConvertCallbackData(event, &status); err != nil {
+		zap.L().Error("Failed to get callback data", zap.Error(err))
+		return
+	}
+
+	if status.ResponseId != "gbxconnector" {
+		return
+	}
+
+	server.Info.LiveInfo.IsWarmup = status.Active
+}
+
+func onScores(event any, server *structs.Server) {
+	var scores structs.Scores
+	if err := lib.ConvertCallbackData(event, &scores); err != nil {
+		zap.L().Error("Failed to get callback data", zap.Error(err))
+		return
+	}
+
+	if scores.ResponseId != "gbxconnector" {
+		return
+	}
+
+	for _, team := range scores.Teams {
+		server.Info.LiveInfo.Teams[team.Id] = structs.Team{
+			Id:          team.Id,
+			Name:        team.Name,
+			RoundPoints: team.RoundPoints,
+			MatchPoints: team.MatchPoints,
+		}
+	}
+
+	for _, player := range scores.Players {
+		server.Info.LiveInfo.Players[player.Login] = structs.PlayerRound{
+			Login:           player.Login,
+			AccountId:       player.AccountId,
+			Name:            player.Name,
+			Team:            player.Team,
+			Rank:            player.Rank,
+			RoundPoints:     player.RoundPoints,
+			MatchPoints:     player.MatchPoints,
+			BestTime:        player.BestRaceTime,
+			BestCheckpoints: player.BestCheckpoints,
+			PrevTime:        player.PrevRaceTime,
+			PrevCheckpoints: player.PrevCheckpoints,
+		}
+	}
 }

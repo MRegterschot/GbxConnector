@@ -54,7 +54,9 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send initial message to the client
-	if err := conn.WriteJSON(liveInfo); err != nil {
+	if err := conn.WriteJSON(map[string]*structs.LiveInfo{
+		"beginMatch": liveInfo,
+	}); err != nil {
 		zap.L().Error("Failed to send initial message to client", zap.Error(err))
 		ls.ClientsMu.Lock()
 		delete(ls.Clients, conn)

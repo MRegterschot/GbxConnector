@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/MRegterschot/GbxConnector/config"
-	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/listeners"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/MRegterschot/GbxRemoteGo/gbxclient"
@@ -28,13 +27,14 @@ func GetClient(server *structs.Server) error {
 	listeners.AddConnectionListeners(server)
 	listeners.AddMapListeners(server)
 	pl := listeners.AddPlayersListeners(server)
-	listeners.AddLiveListeners(server)
+	ll := listeners.AddLiveListeners(server)
 
 	if err := ConnectClient(server); err != nil {
 		return err
 	}
 
 	pl.SyncPlayerList()
+	ll.SyncLiveInfo()
 
 	return nil
 }
@@ -72,72 +72,6 @@ func ConnectClient(server *structs.Server) error {
 	// Set the map info
 	server.Info.ActiveMap = mapInfo.UId
 
-	// Set warmup status
-	server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
-		onWarmUpStatus(event, server)
-	})
-	server.Client.TriggerModeScriptEventArray("Trackmania.WarmUp.GetStatus", []string{"gbxconnector"})
-
-	// Set the current game mode
-	mode, err := server.Client.GetScriptName()
-	if err != nil {
-		zap.L().Error("Failed to get script name", zap.Int("server_id", server.Id), zap.Error(err))
-		return err
-	}
-
-	server.Info.LiveInfo.Mode = mode.CurrentValue
-
-	// Set current map
-	server.Info.LiveInfo.CurrentMap = mapInfo.UId
-
-	// Get script settings
-	scriptSettings, err := server.Client.GetModeScriptSettings()
-	if err != nil {
-		zap.L().Error("Failed to get script settings", zap.Int("server_id", server.Id), zap.Error(err))
-		return err
-	}
-
-	// Set points limit
-	pointsLimit, ok := scriptSettings["S_PointsLimit"].(int)
-	if !ok {
-		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", server.Id))
-	} else {
-		server.Info.LiveInfo.PointsLimit = &pointsLimit
-	}
-
-	// Set rounds limit
-	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
-	if !ok {
-		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", server.Id))
-	} else {
-		server.Info.LiveInfo.RoundsLimit = &roundsLimit
-	}
-
-	// Set map limit
-	mapLimit, ok := scriptSettings["S_MapsPerMatch"].(int)
-	if !ok {
-		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", server.Id))
-	} else {
-		server.Info.LiveInfo.MapLimit = &mapLimit
-	}
-
-	// Set map list
-	mapList, err := server.Client.GetMapList(1000, 0)
-	if err != nil {
-		zap.L().Error("Failed to get map list", zap.Int("server_id", server.Id), zap.Error(err))
-		return err
-	}
-
-	server.Info.LiveInfo.Maps = make([]string, len(mapList))
-	for i, m := range mapList {
-		server.Info.LiveInfo.Maps[i] = m.UId
-	}
-
-	server.Client.AddScriptCallback("Trackmania.Scores", "server", func(event any) {
-		onScores(event, server)
-	})
-	server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
-
 	return nil
 }
 
@@ -171,55 +105,4 @@ func StartReconnectLoop(ctx context.Context, server *structs.Server) {
 			}
 		}
 	}()
-}
-
-func onWarmUpStatus(event any, server *structs.Server) {
-	var status structs.WarmUpStatus
-	if err := lib.ConvertCallbackData(event, &status); err != nil {
-		zap.L().Error("Failed to get callback data", zap.Error(err))
-		return
-	}
-
-	if status.ResponseId != "gbxconnector" {
-		return
-	}
-
-	server.Info.LiveInfo.IsWarmup = status.Active
-}
-
-func onScores(event any, server *structs.Server) {
-	var scores structs.Scores
-	if err := lib.ConvertCallbackData(event, &scores); err != nil {
-		zap.L().Error("Failed to get callback data", zap.Error(err))
-		return
-	}
-
-	if scores.ResponseId != "gbxconnector" {
-		return
-	}
-
-	for _, team := range scores.Teams {
-		server.Info.LiveInfo.Teams[team.Id] = structs.Team{
-			Id:          team.Id,
-			Name:        team.Name,
-			RoundPoints: team.RoundPoints,
-			MatchPoints: team.MatchPoints,
-		}
-	}
-
-	for _, player := range scores.Players {
-		server.Info.LiveInfo.Players[player.Login] = structs.PlayerRound{
-			Login:           player.Login,
-			AccountId:       player.AccountId,
-			Name:            player.Name,
-			Team:            player.Team,
-			Rank:            player.Rank,
-			RoundPoints:     player.RoundPoints,
-			MatchPoints:     player.MatchPoints,
-			BestTime:        player.BestRaceTime,
-			BestCheckpoints: player.BestCheckpoints,
-			PrevTime:        player.PrevRaceTime,
-			PrevCheckpoints: player.PrevCheckpoints,
-		}
-	}
 }
