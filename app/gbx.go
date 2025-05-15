@@ -23,6 +23,7 @@ func GetClient(server *structs.Server) error {
 	listeners.AddConnectionListeners(server)
 	listeners.AddMapListeners(server)
 	pl := listeners.AddPlayersListeners(server)
+	listeners.AddLiveListeners(server)
 
 	if err := ConnectClient(server); err != nil {
 		return err

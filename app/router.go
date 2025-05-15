@@ -29,4 +29,5 @@ func SetupRoutes(r *mux.Router) {
 
 	r.Handle("/ws/map/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandleMapConnection))).Methods("GET")
 	r.Handle("/ws/players/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandlePlayersConnection))).Methods("GET")
+	r.Handle("/ws/live/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandleLiveConnection))).Methods("GET")
 }
