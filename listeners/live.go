@@ -71,6 +71,11 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onWarmUpStartRound,
 	})
 
+	server.Client.OnPlayerInfoChanged = append(server.Client.OnPlayerInfoChanged, gbxclient.GbxCallbackStruct[events.PlayerInfoChangedEventArgs]{
+		Key:  "gbxconnector",
+		Call: ll.onPlayerInfoChanged,
+	})
+
 	return ll
 }
 
@@ -198,6 +203,23 @@ func (ll *LiveListener) onWarmUpStartRound(warmUpEvent events.WarmUpEventArgs) {
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 		"warmUpStartRound": ll.Server.Info.LiveInfo,
+	})
+}
+
+func (ll *LiveListener) onPlayerInfoChanged(playerInfoChangedEvent events.PlayerInfoChangedEventArgs) {
+	spectator := playerInfoChangedEvent.PlayerInfo.SpectatorStatus != 0
+	if spectator {
+		delete(ll.Server.Info.LiveInfo.ActiveRound.Players, playerInfoChangedEvent.PlayerInfo.Login)
+	} else {
+		playerWaypoint := structs.PlayerWaypoint{
+			Login: playerInfoChangedEvent.PlayerInfo.Login,
+		}
+
+		ll.Server.Info.LiveInfo.ActiveRound.Players[playerInfoChangedEvent.PlayerInfo.Login] = playerWaypoint
+	}
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+		"playerInfoChanged": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
 
