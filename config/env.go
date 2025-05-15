@@ -30,7 +30,10 @@ func LoadEnv() error {
 
 	for _, server := range servers {
 		server.Info = &structs.ServerInfo{
-			LiveInfo: &structs.LiveInfo{},
+			LiveInfo: &structs.LiveInfo{
+				Teams:   make(map[int]structs.Team),
+				Players: make(map[string]structs.PlayerRound),
+			},
 		}
 	}
 

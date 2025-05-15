@@ -35,12 +35,13 @@ type LiveInfo struct {
 	IsWarmup    bool     `json:"isWarmup"`
 	Mode        string   `json:"mode"`
 	CurrentMap  string   `json:"currentMap"`
-	PointsLimit int      `json:"pointsLimit"`
+	PointsLimit *int     `json:"pointsLimit,omitempty"`
 	RoundsLimit *int     `json:"roundsLimit,omitempty"`
+	MapLimit    *int     `json:"mapLimit,omitempty"`
 	Maps        []string `json:"maps"`
 
-	Teams   []Team        `json:"teams,omitempty"`
-	Players []PlayerRound `json:"players"`
+	Teams   map[int]Team           `json:"teams,omitempty"`
+	Players map[string]PlayerRound `json:"players,omitempty"`
 
 	ActiveRound ActiveRound `json:"activeRound"`
 }
