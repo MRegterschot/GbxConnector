@@ -9,6 +9,7 @@ import (
 
 	"github.com/MRegterschot/GbxConnector/app"
 	"github.com/MRegterschot/GbxConnector/config"
+	"github.com/MRegterschot/GbxConnector/lib"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,8 @@ func main() {
 	if err != nil {
 		zap.L().Fatal("App setup failed", zap.Error(err))
 	}
+
+	go lib.MemoryChecker(5 * time.Minute)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -36,4 +39,3 @@ func main() {
 		zap.L().Info("HTTP server shutdown complete")
 	}
 }
-
