@@ -45,13 +45,13 @@ func ConnectClient(server *structs.Server) error {
 		return errors.New("client is nil")
 	}
 
-	zap.L().Debug("Connecting to server", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
+	zap.L().Debug("Connecting to server", zap.Int("server_id", server.Id), zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
 	if err := server.Client.Connect(); err != nil {
 		zap.L().Debug("Failed to connect to server", zap.Int("server_id", server.Id), zap.Error(err))
 		return err
 	}
 
-	zap.L().Info("Authenticating with server", zap.Int("id", server.Id))
+	zap.L().Info("Authenticating with server", zap.Int("server_id", server.Id))
 	if err := server.Client.Authenticate(server.User, server.Pass); err != nil {
 		zap.L().Error("Failed to authenticate with server", zap.Int("server_id", server.Id), zap.Error(err))
 		return err

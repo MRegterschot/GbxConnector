@@ -58,11 +58,6 @@ func AddLiveListeners(server *structs.Server) {
 		Key:  "PlayerGiveUpListener",
 		Call: ll.onPlayerGiveUp,
 	})
-
-	server.Client.OnStartLine = append(server.Client.OnStartLine, gbxclient.GbxCallbackStruct[events.StartLineEventArgs]{
-		Key:  "StartLineListener",
-		Call: ll.onStartLine,
-	})
 }
 
 func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEventArgs) {
@@ -136,11 +131,5 @@ func (ll *LiveListener) onEndMatch(endMatchEvent events.EndMatchEventArgs) {
 func (ll *LiveListener) onPlayerGiveUp(playerGiveUpEvent events.PlayerGiveUpEventArgs) {
 	handlers.BroadcastLive(ll.Server.Id, map[string]any{
 		"giveUp": playerGiveUpEvent,
-	})
-}
-
-func (ll *LiveListener) onStartLine(startLineEvent events.StartLineEventArgs) {
-	handlers.BroadcastLive(ll.Server.Id, map[string]any{
-		"startLine": startLineEvent,
 	})
 }

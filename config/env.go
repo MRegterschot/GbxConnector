@@ -33,6 +33,9 @@ func LoadEnv() error {
 			LiveInfo: &structs.LiveInfo{
 				Teams:   make(map[int]structs.Team),
 				Players: make(map[string]structs.PlayerRound),
+				ActiveRound: structs.ActiveRound{
+					Players: make(map[string]structs.PlayerWaypoint),
+				},
 			},
 		}
 	}
