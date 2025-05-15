@@ -26,6 +26,11 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onPlayerCheckpoint,
 	})
 
+	server.Client.OnStartRound = append(server.Client.OnStartRound, gbxclient.GbxCallbackStruct[struct{}]{
+		Key:  "gbxconnector",
+		Call: ll.onStartRound,
+	})
+
 	server.Client.OnEndRound = append(server.Client.OnEndRound, gbxclient.GbxCallbackStruct[events.ScoresEventArgs]{
 		Key:  "gbxconnector",
 		Call: ll.onEndRound,
@@ -65,8 +70,8 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login] = playerWaypoint
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.PlayerWaypoint{
-		"finish": playerWaypoint,
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+		"finish": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
 
@@ -81,8 +86,18 @@ func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWa
 
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login] = playerWaypoint
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.PlayerWaypoint{
-		"checkpoint": playerWaypoint,
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+		"checkpoint": ll.Server.Info.LiveInfo.ActiveRound,
+	})
+}
+
+func (ll *LiveListener) onStartRound(_ struct{}) {
+	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
+		Players: make(map[string]structs.PlayerWaypoint),
+	}
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+		"beginRound": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
 
@@ -133,8 +148,12 @@ func (ll *LiveListener) onBeginMatch(_ struct{}) {
 }
 
 func (ll *LiveListener) onPlayerGiveUp(playerGiveUpEvent events.PlayerGiveUpEventArgs) {
-	handlers.BroadcastLive(ll.Server.Id, map[string]string{
-		"giveUp": playerGiveUpEvent.Login,
+	r := ll.Server.Info.LiveInfo.ActiveRound.Players[playerGiveUpEvent.Login]
+	r.HasGivenUp = true
+	ll.Server.Info.LiveInfo.ActiveRound.Players[playerGiveUpEvent.Login] = r
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+		"giveUp": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
 
@@ -236,6 +255,7 @@ func onScores(event any, server *structs.Server) {
 		return
 	}
 
+	server.Info.LiveInfo.Teams = make(map[int]structs.Team)
 	for _, team := range scores.Teams {
 		server.Info.LiveInfo.Teams[team.Id] = structs.Team{
 			Id:          team.Id,
@@ -245,6 +265,7 @@ func onScores(event any, server *structs.Server) {
 		}
 	}
 
+	server.Info.LiveInfo.Players = make(map[string]structs.PlayerRound)
 	for _, player := range scores.Players {
 		server.Info.LiveInfo.Players[player.Login] = structs.PlayerRound{
 			Login:           player.Login,

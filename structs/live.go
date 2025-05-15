@@ -45,6 +45,7 @@ type PlayerWaypoint struct {
 	AccountId   string `json:"accountid"`
 	Time        int    `json:"time"`
 	HasFinished bool   `json:"hasFinished"`
+	HasGivenUp  bool   `json:"hasGivenUp"`
 	Checkpoint  int    `json:"checkpoint"`
 }
 
