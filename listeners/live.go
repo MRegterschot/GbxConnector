@@ -56,6 +56,21 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onPlayerGiveUp,
 	})
 
+	server.Client.OnWarmUpStart = append(server.Client.OnWarmUpStart, gbxclient.GbxCallbackStruct[struct{}]{
+		Key:  "gbxconnector",
+		Call: ll.onWarmUpStart,
+	})
+
+	server.Client.OnWarmUpEnd = append(server.Client.OnWarmUpEnd, gbxclient.GbxCallbackStruct[struct{}]{
+		Key:  "gbxconnector",
+		Call: ll.onWarmUpEnd,
+	})
+
+	server.Client.OnWarmUpStartRound = append(server.Client.OnWarmUpStartRound, gbxclient.GbxCallbackStruct[events.WarmUpEventArgs]{
+		Key:  "gbxconnector",
+		Call: ll.onWarmUpStartRound,
+	})
+
 	return ll
 }
 
@@ -157,6 +172,35 @@ func (ll *LiveListener) onPlayerGiveUp(playerGiveUpEvent events.PlayerGiveUpEven
 	})
 }
 
+func (ll *LiveListener) onWarmUpStart(_ struct{}) {
+	ll.Server.Info.LiveInfo.IsWarmUp = true
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+		"warmUpStart": ll.Server.Info.LiveInfo,
+	})
+}
+
+func (ll *LiveListener) onWarmUpEnd(_ struct{}) {
+	ll.Server.Info.LiveInfo.IsWarmUp = false
+	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+		"warmUpEnd": ll.Server.Info.LiveInfo,
+	})
+}
+
+func (ll *LiveListener) onWarmUpStartRound(warmUpEvent events.WarmUpEventArgs) {
+	ll.Server.Info.LiveInfo.IsWarmUp = true
+	ll.Server.Info.LiveInfo.WarmUpRound = &warmUpEvent.Current
+	ll.Server.Info.LiveInfo.WarmUpTotalRounds = &warmUpEvent.Total
+
+	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
+		Players: make(map[string]structs.PlayerWaypoint),
+	}
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+		"warmUpStartRound": ll.Server.Info.LiveInfo,
+	})
+}
+
 func (ll *LiveListener) SyncLiveInfo() {
 	// Set warmup status
 	ll.Server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
@@ -241,7 +285,7 @@ func onWarmUpStatus(event any, server *structs.Server) {
 		return
 	}
 
-	server.Info.LiveInfo.IsWarmup = status.Active
+	server.Info.LiveInfo.IsWarmUp = status.Active
 }
 
 func onScores(event any, server *structs.Server) {

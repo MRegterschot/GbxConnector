@@ -1,13 +1,15 @@
 package structs
 
 type LiveInfo struct {
-	IsWarmup    bool     `json:"isWarmup"`
-	Mode        string   `json:"mode"`
-	CurrentMap  string   `json:"currentMap"`
-	PointsLimit *int     `json:"pointsLimit,omitempty"`
-	RoundsLimit *int     `json:"roundsLimit,omitempty"`
-	MapLimit    *int     `json:"mapLimit,omitempty"`
-	Maps        []string `json:"maps"`
+	IsWarmUp          bool     `json:"isWarmUp"`
+	WarmUpRound       *int      `json:"warmUpRound,omitempty"`
+	WarmUpTotalRounds *int      `json:"warmUpTotalRounds,omitempty"`
+	Mode              string   `json:"mode"`
+	CurrentMap        string   `json:"currentMap"`
+	PointsLimit       *int     `json:"pointsLimit,omitempty"`
+	RoundsLimit       *int     `json:"roundsLimit,omitempty"`
+	MapLimit          *int     `json:"mapLimit,omitempty"`
+	Maps              []string `json:"maps"`
 
 	Teams   map[int]Team           `json:"teams,omitempty"`
 	Players map[string]PlayerRound `json:"players,omitempty"`
