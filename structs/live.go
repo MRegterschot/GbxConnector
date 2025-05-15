@@ -1,5 +1,45 @@
 package structs
 
+type LiveInfo struct {
+	IsWarmup    bool     `json:"isWarmup"`
+	Mode        string   `json:"mode"`
+	CurrentMap  string   `json:"currentMap"`
+	PointsLimit *int     `json:"pointsLimit,omitempty"`
+	RoundsLimit *int     `json:"roundsLimit,omitempty"`
+	MapLimit    *int     `json:"mapLimit,omitempty"`
+	Maps        []string `json:"maps"`
+
+	Teams   map[int]Team           `json:"teams,omitempty"`
+	Players map[string]PlayerRound `json:"players,omitempty"`
+
+	ActiveRound ActiveRound `json:"activeRound"`
+}
+
+type Team struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	RoundPoints int    `json:"roundPoints"`
+	MatchPoints int    `json:"matchPoints"`
+}
+
+type PlayerRound struct {
+	Login           string `json:"login"`
+	AccountId       string `json:"accountId"`
+	Name            string `json:"name"`
+	Team            int    `json:"team"`
+	Rank            int    `json:"rank"`
+	RoundPoints     int    `json:"roundPoints"`
+	MatchPoints     int    `json:"matchPoints"`
+	BestTime        int    `json:"bestTime"`
+	BestCheckpoints []int  `json:"bestCheckpoints"`
+	PrevTime        int    `json:"prevTime"`
+	PrevCheckpoints []int  `json:"prevCheckpoints"`
+}
+
+type ActiveRound struct {
+	Players map[string]PlayerWaypoint `json:"players,omitempty"`
+}
+
 type PlayerWaypoint struct {
 	Login       string `json:"login"`
 	AccountId   string `json:"accountid"`
