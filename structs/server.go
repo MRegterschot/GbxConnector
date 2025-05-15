@@ -112,3 +112,18 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 	}
 	return responses
 }
+
+func (s *Server) ResetLiveInfo() {
+	liveInfo := &LiveInfo{
+		Teams:   make(map[int]Team),
+		Players: make(map[string]PlayerRound),
+		ActiveRound: ActiveRound{
+			Players: make(map[string]PlayerWaypoint),
+		},
+	}
+
+	if s.Info == nil {
+		s.Info = &ServerInfo{}
+	}
+	s.Info.LiveInfo = liveInfo
+}

@@ -29,15 +29,7 @@ func LoadEnv() error {
 	}
 
 	for _, server := range servers {
-		server.Info = &structs.ServerInfo{
-			LiveInfo: &structs.LiveInfo{
-				Teams:   make(map[int]structs.Team),
-				Players: make(map[string]structs.PlayerRound),
-				ActiveRound: structs.ActiveRound{
-					Players: make(map[string]structs.PlayerWaypoint),
-				},
-			},
-		}
+		server.ResetLiveInfo()
 	}
 
 	reconnectInterval, err := strconv.Atoi(os.Getenv("SERVER_RECONNECT_INTERVAL"))
