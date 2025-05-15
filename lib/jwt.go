@@ -34,7 +34,7 @@ func GenerateJWT(user structs.User) (string, error) {
 
 // Parses a JWT token.
 func parseJWT(tokenString string) (*jwt.Token, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		// Check the signing method.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			zap.L().Error("Invalid signing method.")
@@ -80,7 +80,7 @@ func ValidateAndGetUser(tokenString string) (structs.User, error) {
 		return structs.User{}, errors.New("invalid token: user claim not found")
 	}
 
-	userMap, ok := userInterface.(map[string]interface{})
+	userMap, ok := userInterface.(map[string]any)
 	if !ok {
 		zap.L().Error("User claim is not a valid map.")
 		return structs.User{}, errors.New("invalid token: user claim is not a valid map")
