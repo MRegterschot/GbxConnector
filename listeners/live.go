@@ -306,7 +306,7 @@ func (ll *LiveListener) SyncLiveInfo() {
 	pointsLimit, ok := scriptSettings["S_PointsLimit"].(int)
 	if !ok {
 		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else {
+	} else if pointsLimit > 0 {
 		ll.Server.Info.LiveInfo.PointsLimit = &pointsLimit
 	}
 
@@ -314,7 +314,7 @@ func (ll *LiveListener) SyncLiveInfo() {
 	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
 	if !ok {
 		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else {
+	} else if roundsLimit > 0 {
 		ll.Server.Info.LiveInfo.RoundsLimit = &roundsLimit
 	}
 
@@ -322,7 +322,7 @@ func (ll *LiveListener) SyncLiveInfo() {
 	mapLimit, ok := scriptSettings["S_MapsPerMatch"].(int)
 	if !ok {
 		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else {
+	} else if mapLimit > 0 {
 		ll.Server.Info.LiveInfo.MapLimit = &mapLimit
 	}
 
