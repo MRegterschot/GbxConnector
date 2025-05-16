@@ -76,6 +76,11 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onPlayerInfoChanged,
 	})
 
+	server.Client.OnPlayerDisconnect = append(server.Client.OnPlayerDisconnect, gbxclient.GbxCallbackStruct[events.PlayerDisconnectEventArgs]{
+		Key:  "gbxconnector",
+		Call: ll.onPlayerDisconnect,
+	})
+
 	return ll
 }
 
@@ -85,7 +90,7 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 		AccountId:   playerFinishEvent.AccountId,
 		Time:        playerFinishEvent.RaceTime,
 		HasFinished: true,
-		Checkpoint:  playerFinishEvent.CheckpointInRace,
+		Checkpoint:  playerFinishEvent.CheckpointInRace + 1,
 	}
 
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login] = playerWaypoint
@@ -101,7 +106,7 @@ func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWa
 		AccountId:   playerCheckpointEvent.AccountId,
 		Time:        playerCheckpointEvent.RaceTime,
 		HasFinished: false,
-		Checkpoint:  playerCheckpointEvent.CheckpointInRace,
+		Checkpoint:  playerCheckpointEvent.CheckpointInRace + 1,
 	}
 
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login] = playerWaypoint
@@ -112,8 +117,27 @@ func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWa
 }
 
 func (ll *LiveListener) onStartRound(_ struct{}) {
+	playerList, err := ll.Server.Client.GetPlayerList(1000, 0)
+	if err != nil {
+		zap.L().Error("Failed to get player list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
 	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
 		Players: make(map[string]structs.PlayerWaypoint),
+	}
+
+	for _, player := range playerList {
+		if player.SpectatorStatus == 0 {
+			playerWaypoint := structs.PlayerWaypoint{
+				Login:       player.Login,
+				AccountId:   "",
+				Time:        0,
+				HasFinished: false,
+				Checkpoint:  0,
+			}
+
+			ll.Server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
+		}
 	}
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
@@ -197,8 +221,27 @@ func (ll *LiveListener) onWarmUpStartRound(warmUpEvent events.WarmUpEventArgs) {
 	ll.Server.Info.LiveInfo.WarmUpRound = &warmUpEvent.Current
 	ll.Server.Info.LiveInfo.WarmUpTotalRounds = &warmUpEvent.Total
 
+	playerList, err := ll.Server.Client.GetPlayerList(1000, 0)
+	if err != nil {
+		zap.L().Error("Failed to get player list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
 	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
 		Players: make(map[string]structs.PlayerWaypoint),
+	}
+
+	for _, player := range playerList {
+		if player.SpectatorStatus == 0 {
+			playerWaypoint := structs.PlayerWaypoint{
+				Login:       player.Login,
+				AccountId:   "",
+				Time:        0,
+				HasFinished: false,
+				Checkpoint:  0,
+			}
+
+			ll.Server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
+		}
 	}
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
@@ -220,6 +263,14 @@ func (ll *LiveListener) onPlayerInfoChanged(playerInfoChangedEvent events.Player
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
 		"playerInfoChanged": ll.Server.Info.LiveInfo.ActiveRound,
+	})
+}
+
+func (ll *LiveListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDisconnectEventArgs) {
+	delete(ll.Server.Info.LiveInfo.ActiveRound.Players, playerDisconnectEvent.Login)
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+		"playerDisconnect": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
 
@@ -291,8 +342,27 @@ func (ll *LiveListener) SyncLiveInfo() {
 	})
 	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
 
+	playerList, err := ll.Server.Client.GetPlayerList(1000, 0)
+	if err != nil {
+		zap.L().Error("Failed to get player list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
 	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
 		Players: make(map[string]structs.PlayerWaypoint),
+	}
+
+	for _, player := range playerList {
+		if player.SpectatorStatus == 0 {
+			playerWaypoint := structs.PlayerWaypoint{
+				Login:       player.Login,
+				AccountId:   "",
+				Time:        0,
+				HasFinished: false,
+				Checkpoint:  0,
+			}
+
+			ll.Server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
+		}
 	}
 }
 
