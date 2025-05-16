@@ -76,6 +76,11 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onPlayerInfoChanged,
 	})
 
+	server.Client.OnPlayerConnect = append(server.Client.OnPlayerConnect, gbxclient.GbxCallbackStruct[events.PlayerConnectEventArgs]{
+		Key:  "gbxconnector",
+		Call: ll.onPlayerConnect,
+	})
+
 	server.Client.OnPlayerDisconnect = append(server.Client.OnPlayerDisconnect, gbxclient.GbxCallbackStruct[events.PlayerDisconnectEventArgs]{
 		Key:  "gbxconnector",
 		Call: ll.onPlayerDisconnect,
@@ -252,6 +257,11 @@ func (ll *LiveListener) onWarmUpStartRound(warmUpEvent events.WarmUpEventArgs) {
 }
 
 func (ll *LiveListener) onPlayerInfoChanged(playerInfoChangedEvent events.PlayerInfoChangedEventArgs) {
+	p := ll.Server.Info.LiveInfo.Players[playerInfoChangedEvent.PlayerInfo.Login]
+	p.Team = playerInfoChangedEvent.PlayerInfo.TeamId
+	p.Name = playerInfoChangedEvent.PlayerInfo.NickName
+	ll.Server.Info.LiveInfo.Players[playerInfoChangedEvent.PlayerInfo.Login] = p
+
 	spectator := playerInfoChangedEvent.PlayerInfo.SpectatorStatus != 0
 	if spectator {
 		delete(ll.Server.Info.LiveInfo.ActiveRound.Players, playerInfoChangedEvent.PlayerInfo.Login)
@@ -265,6 +275,40 @@ func (ll *LiveListener) onPlayerInfoChanged(playerInfoChangedEvent events.Player
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
 		"playerInfoChanged": ll.Server.Info.LiveInfo.ActiveRound,
+	})
+}
+
+func (ll *LiveListener) onPlayerConnect(playerConnectEvent events.PlayerConnectEventArgs) {
+	playerInfo, err := ll.Server.Client.GetPlayerInfo(playerConnectEvent.Login)
+	if err != nil {
+		zap.L().Error("Failed to get player info", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		return
+	}
+
+	if _, ok := ll.Server.Info.LiveInfo.Players[playerConnectEvent.Login]; !ok {
+		ll.Server.Info.LiveInfo.Players[playerConnectEvent.Login] = structs.PlayerRound{
+			Login: playerConnectEvent.Login,
+			Name:  playerInfo.NickName,
+			Team:  playerInfo.TeamId,
+		}
+	} else {
+		p := ll.Server.Info.LiveInfo.Players[playerConnectEvent.Login]
+		p.Team = playerInfo.TeamId
+		ll.Server.Info.LiveInfo.Players[playerConnectEvent.Login] = p
+	}
+
+	if playerInfo.SpectatorStatus == 0 {
+		playerWaypoint := structs.PlayerWaypoint{
+			Login: playerConnectEvent.Login,
+		}
+
+		ll.Server.Info.LiveInfo.ActiveRound.Players[playerConnectEvent.Login] = playerWaypoint
+	} else {
+		delete(ll.Server.Info.LiveInfo.ActiveRound.Players, playerConnectEvent.Login)
+	}
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+		"playerConnect": ll.Server.Info.LiveInfo,
 	})
 }
 
