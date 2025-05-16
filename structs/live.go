@@ -2,8 +2,8 @@ package structs
 
 type LiveInfo struct {
 	IsWarmUp          bool     `json:"isWarmUp"`
-	WarmUpRound       *int      `json:"warmUpRound,omitempty"`
-	WarmUpTotalRounds *int      `json:"warmUpTotalRounds,omitempty"`
+	WarmUpRound       *int     `json:"warmUpRound,omitempty"`
+	WarmUpTotalRounds *int     `json:"warmUpTotalRounds,omitempty"`
 	Mode              string   `json:"mode"`
 	CurrentMap        string   `json:"currentMap"`
 	PointsLimit       *int     `json:"pointsLimit,omitempty"`
@@ -30,6 +30,8 @@ type PlayerRound struct {
 	Name            string `json:"name"`
 	Team            int    `json:"team"`
 	Rank            int    `json:"rank"`
+	Finalist        bool   `json:"finalist"`
+	Winner          bool   `json:"winner"`
 	RoundPoints     int    `json:"roundPoints"`
 	MatchPoints     int    `json:"matchPoints"`
 	BestTime        int    `json:"bestTime"`
@@ -44,10 +46,11 @@ type ActiveRound struct {
 
 type PlayerWaypoint struct {
 	Login       string `json:"login"`
-	AccountId   string `json:"accountid"`
+	AccountId   string `json:"accountId"`
 	Time        int    `json:"time"`
 	HasFinished bool   `json:"hasFinished"`
 	HasGivenUp  bool   `json:"hasGivenUp"`
+	IsFinalist  bool   `json:"isFinalist"`
 	Checkpoint  int    `json:"checkpoint"`
 }
 

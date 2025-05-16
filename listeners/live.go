@@ -85,15 +85,13 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 }
 
 func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEventArgs) {
-	playerWaypoint := structs.PlayerWaypoint{
-		Login:       playerFinishEvent.Login,
-		AccountId:   playerFinishEvent.AccountId,
-		Time:        playerFinishEvent.RaceTime,
-		HasFinished: true,
-		Checkpoint:  playerFinishEvent.CheckpointInRace + 1,
-	}
+	pw := ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login]
 
-	ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login] = playerWaypoint
+	pw.Time = playerFinishEvent.RaceTime
+	pw.HasFinished = true
+	pw.Checkpoint = playerFinishEvent.CheckpointInRace + 1
+
+	ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login] = pw
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
 		"finish": ll.Server.Info.LiveInfo.ActiveRound,
@@ -101,15 +99,12 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 }
 
 func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWayPointEventArgs) {
-	playerWaypoint := structs.PlayerWaypoint{
-		Login:       playerCheckpointEvent.Login,
-		AccountId:   playerCheckpointEvent.AccountId,
-		Time:        playerCheckpointEvent.RaceTime,
-		HasFinished: false,
-		Checkpoint:  playerCheckpointEvent.CheckpointInRace + 1,
-	}
+	pw := ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login]
 
-	ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login] = playerWaypoint
+	pw.Time = playerCheckpointEvent.RaceTime
+	pw.Checkpoint = playerCheckpointEvent.CheckpointInRace + 1
+
+	ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login] = pw
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
 		"checkpoint": ll.Server.Info.LiveInfo.ActiveRound,
@@ -128,11 +123,14 @@ func (ll *LiveListener) onStartRound(_ struct{}) {
 
 	for _, player := range playerList {
 		if player.SpectatorStatus == 0 {
+			playerInfo := ll.Server.Info.LiveInfo.Players[player.Login]
+
 			playerWaypoint := structs.PlayerWaypoint{
 				Login:       player.Login,
-				AccountId:   "",
+				AccountId:   playerInfo.AccountId,
 				Time:        0,
 				HasFinished: false,
+				IsFinalist:  playerInfo.MatchPoints == *ll.Server.Info.LiveInfo.PointsLimit,
 				Checkpoint:  0,
 			}
 
@@ -146,17 +144,21 @@ func (ll *LiveListener) onStartRound(_ struct{}) {
 }
 
 func (ll *LiveListener) onEndRound(endRoundEvent events.ScoresEventArgs) {
-	for _, team := range endRoundEvent.Teams {
-		t := ll.Server.Info.LiveInfo.Teams[team.ID]
-		t.RoundPoints = team.RoundPoints
-		t.MatchPoints = team.MatchPoints
-		ll.Server.Info.LiveInfo.Teams[team.ID] = t
+	if endRoundEvent.UseTeams {
+		for _, team := range endRoundEvent.Teams {
+			t := ll.Server.Info.LiveInfo.Teams[team.ID]
+			t.RoundPoints = team.RoundPoints
+			t.MatchPoints = team.MatchPoints
+			ll.Server.Info.LiveInfo.Teams[team.ID] = t
+		}
 	}
 
 	for _, player := range endRoundEvent.Players {
 		p := ll.Server.Info.LiveInfo.Players[player.Login]
 		p.RoundPoints = player.RoundPoints
 		p.MatchPoints = player.MatchPoints
+		p.Finalist = player.MatchPoints == *ll.Server.Info.LiveInfo.PointsLimit
+		p.Winner = player.MatchPoints > *ll.Server.Info.LiveInfo.PointsLimit
 		p.BestTime = player.BestRaceTime
 		p.BestCheckpoints = player.BestRaceCheckpoints
 		p.PrevTime = player.PrevRaceTime
@@ -341,29 +343,6 @@ func (ll *LiveListener) SyncLiveInfo() {
 		onScores(event, ll.Server)
 	})
 	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
-
-	playerList, err := ll.Server.Client.GetPlayerList(1000, 0)
-	if err != nil {
-		zap.L().Error("Failed to get player list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
-	}
-
-	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
-		Players: make(map[string]structs.PlayerWaypoint),
-	}
-
-	for _, player := range playerList {
-		if player.SpectatorStatus == 0 {
-			playerWaypoint := structs.PlayerWaypoint{
-				Login:       player.Login,
-				AccountId:   "",
-				Time:        0,
-				HasFinished: false,
-				Checkpoint:  0,
-			}
-
-			ll.Server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
-		}
-	}
 }
 
 func onWarmUpStatus(event any, server *structs.Server) {
@@ -391,13 +370,15 @@ func onScores(event any, server *structs.Server) {
 		return
 	}
 
-	server.Info.LiveInfo.Teams = make(map[int]structs.Team)
-	for _, team := range scores.Teams {
-		server.Info.LiveInfo.Teams[team.Id] = structs.Team{
-			Id:          team.Id,
-			Name:        team.Name,
-			RoundPoints: team.RoundPoints,
-			MatchPoints: team.MatchPoints,
+	if scores.UseTeams {
+		server.Info.LiveInfo.Teams = make(map[int]structs.Team)
+		for _, team := range scores.Teams {
+			server.Info.LiveInfo.Teams[team.Id] = structs.Team{
+				Id:          team.Id,
+				Name:        team.Name,
+				RoundPoints: team.RoundPoints,
+				MatchPoints: team.MatchPoints,
+			}
 		}
 	}
 
@@ -409,12 +390,40 @@ func onScores(event any, server *structs.Server) {
 			Name:            player.Name,
 			Team:            player.Team,
 			Rank:            player.Rank,
+			Finalist:        player.MatchPoints == *server.Info.LiveInfo.PointsLimit,
+			Winner:          player.MatchPoints > *server.Info.LiveInfo.PointsLimit,
 			RoundPoints:     player.RoundPoints,
 			MatchPoints:     player.MatchPoints,
 			BestTime:        player.BestRaceTime,
 			BestCheckpoints: player.BestCheckpoints,
 			PrevTime:        player.PrevRaceTime,
 			PrevCheckpoints: player.PrevCheckpoints,
+		}
+	}
+
+	playerList, err := server.Client.GetPlayerList(1000, 0)
+	if err != nil {
+		zap.L().Error("Failed to get player list", zap.Int("server_id", server.Id), zap.Error(err))
+	}
+
+	server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
+		Players: make(map[string]structs.PlayerWaypoint),
+	}
+
+	for _, player := range playerList {
+		if player.SpectatorStatus == 0 {
+			playerInfo := server.Info.LiveInfo.Players[player.Login]
+
+			playerWaypoint := structs.PlayerWaypoint{
+				Login:       player.Login,
+				AccountId:   playerInfo.AccountId,
+				Time:        0,
+				HasFinished: false,
+				IsFinalist:  playerInfo.Finalist,
+				Checkpoint:  0,
+			}
+
+			server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
 		}
 	}
 }
