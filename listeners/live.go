@@ -291,6 +291,12 @@ func (ll *LiveListener) SyncLiveInfo() {
 
 	ll.Server.Info.LiveInfo.Mode = mode.CurrentValue
 
+	// Set the use teams status
+	ll.Server.Client.AddScriptCallback("Maniaplanet.Mode.UseTeams", "server", func(event any) {
+		onUseTeams(event, ll.Server)
+	})
+	ll.Server.Client.TriggerModeScriptEventArray("Maniaplanet.Mode.GetUseTeams", []string{"gbxconnector"})
+
 	mapInfo, err := ll.Server.Client.GetCurrentMapInfo()
 	if err != nil {
 		zap.L().Error("Failed to get current map info", zap.Int("server_id", ll.Server.Id), zap.Error(err))
@@ -426,4 +432,18 @@ func onScores(event any, server *structs.Server) {
 			server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
 		}
 	}
+}
+
+func onUseTeams(event any, server *structs.Server) {
+	var useTeams structs.UseTeams
+	if err := lib.ConvertCallbackData(event, &useTeams); err != nil {
+		zap.L().Error("Failed to get callback data", zap.Error(err))
+		return
+	}
+
+	if useTeams.ResponseId != "gbxconnector" {
+		return
+	}
+
+	server.Info.LiveInfo.UseTeams = useTeams.Teams
 }

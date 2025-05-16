@@ -5,6 +5,7 @@ type LiveInfo struct {
 	WarmUpRound       *int     `json:"warmUpRound,omitempty"`
 	WarmUpTotalRounds *int     `json:"warmUpTotalRounds,omitempty"`
 	Mode              string   `json:"mode"`
+	UseTeams          bool     `json:"useTeams"`
 	CurrentMap        string   `json:"currentMap"`
 	PointsLimit       *int     `json:"pointsLimit,omitempty"`
 	RoundsLimit       *int     `json:"roundsLimit,omitempty"`
@@ -67,6 +68,11 @@ type Scores struct {
 	WinnerTeam int                   `json:"winnerteam"`
 	Teams      []Team                `json:"teams"`
 	Players    []CallbackPlayerRound `json:"players"`
+}
+
+type UseTeams struct {
+	ResponseId string `json:"responseid"`
+	Teams      bool   `json:"teams"`
 }
 
 type CallbackPlayerRound struct {
