@@ -5,11 +5,12 @@ type LiveInfo struct {
 	WarmUpRound       *int     `json:"warmUpRound,omitempty"`
 	WarmUpTotalRounds *int     `json:"warmUpTotalRounds,omitempty"`
 	Mode              string   `json:"mode"`
-	UseTeams          bool     `json:"useTeams"`
+	Type              string   `json:"type"`
 	CurrentMap        string   `json:"currentMap"`
 	PointsLimit       *int     `json:"pointsLimit,omitempty"`
 	RoundsLimit       *int     `json:"roundsLimit,omitempty"`
 	MapLimit          *int     `json:"mapLimit,omitempty"`
+	NbWinners         *int     `json:"nbWinners,omitempty"`
 	Maps              []string `json:"maps"`
 
 	Teams   map[int]Team           `json:"teams,omitempty"`

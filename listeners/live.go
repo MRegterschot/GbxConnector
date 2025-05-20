@@ -1,6 +1,7 @@
 package listeners
 
 import (
+	"strings"
 	"time"
 
 	"github.com/MRegterschot/GbxConnector/handlers"
@@ -339,11 +340,27 @@ func (ll *LiveListener) SyncLiveInfo() {
 
 	ll.Server.Info.LiveInfo.Mode = mode.CurrentValue
 
-	// Set the use teams status
-	ll.Server.Client.AddScriptCallback("Maniaplanet.Mode.UseTeams", "server", func(event any) {
-		onUseTeams(event, ll.Server)
-	})
-	ll.Server.Client.TriggerModeScriptEventArray("Maniaplanet.Mode.GetUseTeams", []string{"gbxconnector"})
+	modeLower := strings.ToLower(mode.CurrentValue)
+
+	// Set the type
+	switch {
+		case strings.Contains(modeLower, "timeattack"):
+			ll.Server.Info.LiveInfo.Type = "timeattack"
+		case strings.Contains(modeLower, "rounds"):
+			ll.Server.Info.LiveInfo.Type = "rounds"
+		case strings.Contains(modeLower, "cup"):
+			ll.Server.Info.LiveInfo.Type = "cup"
+		case strings.Contains(modeLower, "teams"):
+			ll.Server.Info.LiveInfo.Type = "teams"
+		case strings.Contains(modeLower, "knockout"):
+			ll.Server.Info.LiveInfo.Type = "knockout"
+		case strings.Contains(modeLower, "tmwc"):
+			ll.Server.Info.LiveInfo.Type = "tmwc"
+		case strings.Contains(modeLower, "tmwt"):
+			ll.Server.Info.LiveInfo.Type = "tmwt"
+		default:
+			ll.Server.Info.LiveInfo.Type = "rounds"
+	}
 
 	mapInfo, err := ll.Server.Client.GetCurrentMapInfo()
 	if err != nil {
@@ -480,18 +497,4 @@ func onScores(event any, server *structs.Server) {
 			server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
 		}
 	}
-}
-
-func onUseTeams(event any, server *structs.Server) {
-	var useTeams structs.UseTeams
-	if err := lib.ConvertCallbackData(event, &useTeams); err != nil {
-		zap.L().Error("Failed to get callback data", zap.Error(err))
-		return
-	}
-
-	if useTeams.ResponseId != "gbxconnector" {
-		return
-	}
-
-	server.Info.LiveInfo.UseTeams = useTeams.Teams
 }
