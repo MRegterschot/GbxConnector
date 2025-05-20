@@ -399,6 +399,14 @@ func (ll *LiveListener) SyncLiveInfo() {
 		ll.Server.Info.LiveInfo.MapLimit = &mapLimit
 	}
 
+	// Set number of winners
+	nbWinners, ok := scriptSettings["S_NbOfWinners"].(int)
+	if !ok {
+		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else if nbWinners > 0 {
+		ll.Server.Info.LiveInfo.NbWinners = &nbWinners
+	}
+
 	// Set map list
 	mapList, err := ll.Server.Client.GetMapList(1000, 0)
 	if err != nil {
