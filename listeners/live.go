@@ -89,6 +89,11 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onPlayerDisconnect,
 	})
 
+	server.Client.OnEcho = append(server.Client.OnEcho, gbxclient.GbxCallbackStruct[events.EchoEventArgs]{
+		Key:  "gbxconnector",
+		Call: ll.onEcho,
+	})
+
 	return ll
 }
 
@@ -329,6 +334,15 @@ func (ll *LiveListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDi
 	})
 }
 
+func (ll *LiveListener) onEcho(echoEvent events.EchoEventArgs) {
+	if echoEvent.Internal == "UpdatedSettings" {
+		ll.setScriptSettings()
+		handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+			"updatedSettings": ll.Server.Info.LiveInfo,
+		})
+	}
+}
+
 func (ll *LiveListener) SyncLiveInfo() {
 	// Set warmup status
 	ll.Server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
@@ -373,43 +387,7 @@ func (ll *LiveListener) SyncLiveInfo() {
 
 	ll.Server.Info.LiveInfo.CurrentMap = mapInfo.UId
 
-	// Get script settings
-	scriptSettings, err := ll.Server.Client.GetModeScriptSettings()
-	if err != nil {
-		zap.L().Error("Failed to get script settings", zap.Int("server_id", ll.Server.Id), zap.Error(err))
-	}
-
-	// Set points limit
-	pointsLimit, ok := scriptSettings["S_PointsLimit"].(int)
-	if !ok {
-		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else if pointsLimit > 0 {
-		ll.Server.Info.LiveInfo.PointsLimit = &pointsLimit
-	}
-
-	// Set rounds limit
-	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
-	if !ok {
-		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else if roundsLimit > 0 {
-		ll.Server.Info.LiveInfo.RoundsLimit = &roundsLimit
-	}
-
-	// Set map limit
-	mapLimit, ok := scriptSettings["S_MapsPerMatch"].(int)
-	if !ok {
-		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else if mapLimit > 0 {
-		ll.Server.Info.LiveInfo.MapLimit = &mapLimit
-	}
-
-	// Set number of winners
-	nbWinners, ok := scriptSettings["S_NbOfWinners"].(int)
-	if !ok {
-		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", ll.Server.Id))
-	} else if nbWinners > 0 {
-		ll.Server.Info.LiveInfo.NbWinners = &nbWinners
-	}
+	ll.setScriptSettings()
 
 	// Set map list
 	mapList, err := ll.Server.Client.GetMapList(1000, 0)
@@ -530,4 +508,44 @@ func onPauseStatus(event any, server *structs.Server) {
 
 	server.Info.LiveInfo.PauseAvailable = status.Available
 	server.Info.LiveInfo.IsPaused = status.Active
+}
+
+func (ll *LiveListener) setScriptSettings() {
+	// Get script settings
+	scriptSettings, err := ll.Server.Client.GetModeScriptSettings()
+	if err != nil {
+		zap.L().Error("Failed to get script settings", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+	}
+
+	// Set points limit
+	pointsLimit, ok := scriptSettings["S_PointsLimit"].(int)
+	if !ok {
+		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else if pointsLimit > 0 {
+		ll.Server.Info.LiveInfo.PointsLimit = &pointsLimit
+	}
+
+	// Set rounds limit
+	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
+	if !ok {
+		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else if roundsLimit > 0 {
+		ll.Server.Info.LiveInfo.RoundsLimit = &roundsLimit
+	}
+
+	// Set map limit
+	mapLimit, ok := scriptSettings["S_MapsPerMatch"].(int)
+	if !ok {
+		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else if mapLimit > 0 {
+		ll.Server.Info.LiveInfo.MapLimit = &mapLimit
+	}
+
+	// Set number of winners
+	nbWinners, ok := scriptSettings["S_NbOfWinners"].(int)
+	if !ok {
+		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else if nbWinners > 0 {
+		ll.Server.Info.LiveInfo.NbWinners = &nbWinners
+	}
 }
