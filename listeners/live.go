@@ -344,22 +344,22 @@ func (ll *LiveListener) SyncLiveInfo() {
 
 	// Set the type
 	switch {
-		case strings.Contains(modeLower, "timeattack"):
-			ll.Server.Info.LiveInfo.Type = "timeattack"
-		case strings.Contains(modeLower, "rounds"):
-			ll.Server.Info.LiveInfo.Type = "rounds"
-		case strings.Contains(modeLower, "cup"):
-			ll.Server.Info.LiveInfo.Type = "cup"
-		case strings.Contains(modeLower, "teams"):
-			ll.Server.Info.LiveInfo.Type = "teams"
-		case strings.Contains(modeLower, "knockout"):
-			ll.Server.Info.LiveInfo.Type = "knockout"
-		case strings.Contains(modeLower, "tmwc"):
-			ll.Server.Info.LiveInfo.Type = "tmwc"
-		case strings.Contains(modeLower, "tmwt"):
-			ll.Server.Info.LiveInfo.Type = "tmwt"
-		default:
-			ll.Server.Info.LiveInfo.Type = "rounds"
+	case strings.Contains(modeLower, "timeattack"):
+		ll.Server.Info.LiveInfo.Type = "timeattack"
+	case strings.Contains(modeLower, "rounds"):
+		ll.Server.Info.LiveInfo.Type = "rounds"
+	case strings.Contains(modeLower, "cup"):
+		ll.Server.Info.LiveInfo.Type = "cup"
+	case strings.Contains(modeLower, "teams"):
+		ll.Server.Info.LiveInfo.Type = "teams"
+	case strings.Contains(modeLower, "knockout"):
+		ll.Server.Info.LiveInfo.Type = "knockout"
+	case strings.Contains(modeLower, "tmwc"):
+		ll.Server.Info.LiveInfo.Type = "tmwc"
+	case strings.Contains(modeLower, "tmwt"):
+		ll.Server.Info.LiveInfo.Type = "tmwt"
+	default:
+		ll.Server.Info.LiveInfo.Type = "rounds"
 	}
 
 	mapInfo, err := ll.Server.Client.GetCurrentMapInfo()
