@@ -11,6 +11,8 @@ type LiveInfo struct {
 	RoundsLimit       *int     `json:"roundsLimit,omitempty"`
 	MapLimit          *int     `json:"mapLimit,omitempty"`
 	NbWinners         *int     `json:"nbWinners,omitempty"`
+	PauseAvailable    bool     `json:"pauseAvailable"`
+	IsPaused          bool     `json:"isPaused"`
 	Maps              []string `json:"maps"`
 
 	Teams   map[int]Team           `json:"teams,omitempty"`
@@ -91,4 +93,10 @@ type CallbackPlayerRound struct {
 	BestLapCheckpoints []int  `json:"bestlapcheckpoints"`
 	PrevRaceTime       int    `json:"prevracetime"`
 	PrevCheckpoints    []int  `json:"prevcheckpoints"`
+}
+
+type Pause struct {
+	ResponseId string `json:"responseid"`
+	Available  bool   `json:"available"`
+	Active     bool   `json:"active"`
 }

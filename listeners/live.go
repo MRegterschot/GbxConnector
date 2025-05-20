@@ -174,6 +174,10 @@ func (ll *LiveListener) onEndRound(endRoundEvent events.ScoresEventArgs) {
 		ll.Server.Info.LiveInfo.Players[player.Login] = p
 	}
 
+	ll.Server.Client.TriggerModeScriptEventArray("Maniaplanet.Pause.GetStatus", []string{"gbxconnector"})
+
+	time.Sleep(300 * time.Millisecond) // Wait a bit for callbacks to be set
+
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 		"endRound": ll.Server.Info.LiveInfo,
 	})
@@ -422,6 +426,12 @@ func (ll *LiveListener) SyncLiveInfo() {
 		onScores(event, ll.Server)
 	})
 	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
+
+	// Set pause status
+	ll.Server.Client.AddScriptCallback("Maniaplanet.Pause.Status", "server", func(event any) {
+		onPauseStatus(event, ll.Server)
+	})
+	ll.Server.Client.TriggerModeScriptEventArray("Maniaplanet.Pause.GetStatus", []string{"gbxconnector"})
 }
 
 func onWarmUpStatus(event any, server *structs.Server) {
@@ -505,4 +515,19 @@ func onScores(event any, server *structs.Server) {
 			server.Info.LiveInfo.ActiveRound.Players[player.Login] = playerWaypoint
 		}
 	}
+}
+
+func onPauseStatus(event any, server *structs.Server) {
+	var status structs.Pause
+	if err := lib.ConvertCallbackData(event, &status); err != nil {
+		zap.L().Error("Failed to get callback data", zap.Error(err))
+		return
+	}
+
+	if status.ResponseId != "gbxconnector" {
+		return
+	}
+
+	server.Info.LiveInfo.PauseAvailable = status.Available
+	server.Info.LiveInfo.IsPaused = status.Active
 }
