@@ -60,6 +60,9 @@ func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.Playe
 }
 
 func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.PlayerInfoChangedEventArgs) {
+	if pl.Server.Info.ActivePlayers == nil {
+		pl.Server.Info.ActivePlayers = make([]structs.PlayerInfo, 0)
+	}
 
 	var playerInfo structs.PlayerInfo
 	for i, player := range pl.Server.Info.ActivePlayers {

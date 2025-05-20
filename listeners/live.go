@@ -1,6 +1,8 @@
 package listeners
 
 import (
+	"time"
+
 	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
@@ -192,6 +194,8 @@ func (ll *LiveListener) onEndMap(endMapEvent events.MapEventArgs) {
 
 func (ll *LiveListener) onBeginMatch(_ struct{}) {
 	ll.SyncLiveInfo()
+
+	time.Sleep(300 * time.Millisecond) // Wait a bit for callbacks to be set
 
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 		"beginMatch": ll.Server.Info.LiveInfo,
