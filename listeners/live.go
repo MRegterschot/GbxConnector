@@ -94,6 +94,11 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onEcho,
 	})
 
+	server.Client.OnAnyCallback = append(server.Client.OnAnyCallback, gbxclient.GbxCallbackStruct[gbxclient.CallbackEventArgs]{
+		Key:  "gbxconnector",
+		Call: ll.onAnyCallack,
+	})
+
 	return ll
 }
 
@@ -143,7 +148,7 @@ func (ll *LiveListener) onStartRound(_ struct{}) {
 				AccountId:   playerInfo.AccountId,
 				Time:        0,
 				HasFinished: false,
-				IsFinalist:  playerInfo.MatchPoints == *ll.Server.Info.LiveInfo.PointsLimit,
+				IsFinalist:  isFinalist(playerInfo.MatchPoints, ll.Server.Info.LiveInfo.PointsLimit),
 				Checkpoint:  0,
 			}
 
@@ -160,7 +165,11 @@ func (ll *LiveListener) onEndRound(endRoundEvent events.ScoresEventArgs) {
 	if endRoundEvent.UseTeams {
 		for _, team := range endRoundEvent.Teams {
 			t := ll.Server.Info.LiveInfo.Teams[team.ID]
-			t.RoundPoints = team.RoundPoints
+			if ll.Server.Info.LiveInfo.Type == "tmwc" || ll.Server.Info.LiveInfo.Type == "tmwt" {
+				t.RoundPoints = team.MapPoints
+			} else {
+				t.RoundPoints = team.RoundPoints
+			}
 			t.MatchPoints = team.MatchPoints
 			ll.Server.Info.LiveInfo.Teams[team.ID] = t
 		}
@@ -170,8 +179,8 @@ func (ll *LiveListener) onEndRound(endRoundEvent events.ScoresEventArgs) {
 		p := ll.Server.Info.LiveInfo.Players[player.Login]
 		p.RoundPoints = player.RoundPoints
 		p.MatchPoints = player.MatchPoints
-		p.Finalist = player.MatchPoints == *ll.Server.Info.LiveInfo.PointsLimit
-		p.Winner = player.MatchPoints > *ll.Server.Info.LiveInfo.PointsLimit
+		p.Finalist = isFinalist(player.MatchPoints, ll.Server.Info.LiveInfo.PointsLimit)
+		p.Winner = isWinner(player.MatchPoints, ll.Server.Info.LiveInfo.PointsLimit)
 		p.BestTime = player.BestRaceTime
 		p.BestCheckpoints = player.BestRaceCheckpoints
 		p.PrevTime = player.PrevRaceTime
@@ -343,6 +352,12 @@ func (ll *LiveListener) onEcho(echoEvent events.EchoEventArgs) {
 	}
 }
 
+func (ll *LiveListener) onAnyCallack(event gbxclient.CallbackEventArgs) {
+	handlers.BroadcastLive(ll.Server.Id, map[string]any{
+		"anyCallback": event,
+	})
+}
+
 func (ll *LiveListener) SyncLiveInfo() {
 	// Set warmup status
 	ll.Server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
@@ -368,14 +383,14 @@ func (ll *LiveListener) SyncLiveInfo() {
 		ll.Server.Info.LiveInfo.Type = "rounds"
 	case strings.Contains(modeLower, "cup"):
 		ll.Server.Info.LiveInfo.Type = "cup"
-	case strings.Contains(modeLower, "teams"):
-		ll.Server.Info.LiveInfo.Type = "teams"
-	case strings.Contains(modeLower, "knockout"):
-		ll.Server.Info.LiveInfo.Type = "knockout"
 	case strings.Contains(modeLower, "tmwc"):
 		ll.Server.Info.LiveInfo.Type = "tmwc"
 	case strings.Contains(modeLower, "tmwt"):
 		ll.Server.Info.LiveInfo.Type = "tmwt"
+	case strings.Contains(modeLower, "teams"):
+		ll.Server.Info.LiveInfo.Type = "teams"
+	case strings.Contains(modeLower, "knockout"):
+		ll.Server.Info.LiveInfo.Type = "knockout"
 	default:
 		ll.Server.Info.LiveInfo.Type = "rounds"
 	}
@@ -457,8 +472,8 @@ func onScores(event any, server *structs.Server) {
 			Name:            player.Name,
 			Team:            player.Team,
 			Rank:            player.Rank,
-			Finalist:        player.MatchPoints == *server.Info.LiveInfo.PointsLimit,
-			Winner:          player.MatchPoints > *server.Info.LiveInfo.PointsLimit,
+			Finalist:        isFinalist(player.MatchPoints, server.Info.LiveInfo.PointsLimit),
+			Winner:          isWinner(player.MatchPoints, server.Info.LiveInfo.PointsLimit),
 			RoundPoints:     player.RoundPoints,
 			MatchPoints:     player.MatchPoints,
 			BestTime:        player.BestRaceTime,
@@ -517,8 +532,15 @@ func (ll *LiveListener) setScriptSettings() {
 		zap.L().Error("Failed to get script settings", zap.Int("server_id", ll.Server.Id), zap.Error(err))
 	}
 
+	plVar := "S_PointsLimit"
+	mlVar := "S_MapsPerMatch"
+	if ll.Server.Info.LiveInfo.Type == "tmwc" || ll.Server.Info.LiveInfo.Type == "tmwt" {
+		plVar = "S_MapPointsLimit"
+		mlVar = "S_MatchPointsLimit"
+	}
+
 	// Set points limit
-	pointsLimit, ok := scriptSettings["S_PointsLimit"].(int)
+	pointsLimit, ok := scriptSettings[plVar].(int)
 	if !ok {
 		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
 	} else if pointsLimit > 0 {
@@ -534,7 +556,7 @@ func (ll *LiveListener) setScriptSettings() {
 	}
 
 	// Set map limit
-	mapLimit, ok := scriptSettings["S_MapsPerMatch"].(int)
+	mapLimit, ok := scriptSettings[mlVar].(int)
 	if !ok {
 		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
 	} else if mapLimit > 0 {
@@ -548,4 +570,20 @@ func (ll *LiveListener) setScriptSettings() {
 	} else if nbWinners > 0 {
 		ll.Server.Info.LiveInfo.NbWinners = &nbWinners
 	}
+}
+
+func isFinalist(matchPoints int, pointsLimit *int) bool {
+	if pointsLimit == nil {
+		return false
+	}
+
+	return matchPoints == *pointsLimit
+}
+
+func isWinner(matchPoints int, pointsLimit *int) bool {
+	if pointsLimit == nil {
+		return false
+	}
+
+	return matchPoints > *pointsLimit
 }
