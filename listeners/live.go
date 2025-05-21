@@ -24,11 +24,6 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onPlayerFinish,
 	})
 
-	server.Client.OnPlayerFinish = append(server.Client.OnPlayerFinish, gbxclient.GbxCallbackStruct[events.PlayerWayPointEventArgs]{
-		Key:  "gbxconnectorta",
-		Call: ll.onPlayerFinishTA,
-	})
-
 	server.Client.OnPlayerCheckpoint = append(server.Client.OnPlayerCheckpoint, gbxclient.GbxCallbackStruct[events.PlayerWayPointEventArgs]{
 		Key:  "gbxconnector",
 		Call: ll.onPlayerCheckpoint,
@@ -119,21 +114,19 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
 		"finish": ll.Server.Info.LiveInfo.ActiveRound,
 	})
-}
 
-func (ll *LiveListener) onPlayerFinishTA(playerFinishEvent events.PlayerWayPointEventArgs) {
 	if ll.Server.Info.LiveInfo.Type != "timeattack" {
 		return
 	}
-
+	
 	p := ll.Server.Info.LiveInfo.Players[playerFinishEvent.Login]
 	if p.BestTime > 0 && p.BestTime <= playerFinishEvent.RaceTime {
 		return
 	}
-
+	
 	p.BestTime = playerFinishEvent.RaceTime
 	ll.Server.Info.LiveInfo.Players[playerFinishEvent.Login] = p
-
+	
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 		"personalBest": ll.Server.Info.LiveInfo,
 	})
