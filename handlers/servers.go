@@ -155,6 +155,7 @@ func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newServer, err := addServerFunc(&server)
+	server.ResetLiveInfo()
 
 	if err != nil {
 		zap.L().Error("Failed to add server", zap.Error(err))
@@ -231,6 +232,8 @@ func HandleUpdateServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to update server", http.StatusInternalServerError)
 		return
 	}
+
+	server.ResetLiveInfo()
 
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(updatedServer.ToServerResponse()); err != nil {
