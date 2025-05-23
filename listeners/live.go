@@ -100,11 +100,6 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onElimination,
 	})
 
-	// server.Client.OnAnyCallback = append(server.Client.OnAnyCallback, gbxclient.GbxCallbackStruct[gbxclient.CallbackEventArgs]{
-	// 	Key:  "gbxconnector",
-	// 	Call: ll.onAnyCallack,
-	// })
-
 	return ll
 }
 
@@ -391,12 +386,6 @@ func (ll *LiveListener) onElimination(eliminationEvent events.EliminationEventAr
 	})
 }
 
-func (ll *LiveListener) onAnyCallack(event gbxclient.CallbackEventArgs) {
-	handlers.BroadcastLive(ll.Server.Id, map[string]any{
-		"anyCallback": event,
-	})
-}
-
 func (ll *LiveListener) SyncLiveInfo() {
 	// Set warmup status
 	ll.Server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
@@ -620,12 +609,14 @@ func (ll *LiveListener) setScriptSettings() {
 	if !ok {
 		zap.L().Debug("PointsRepartition not found in script settings", zap.Int("server_id", ll.Server.Id))
 	} else if len(pointsRepartition) > 0 {
+		repartitionList := []int{}
 		for i := range strings.SplitSeq(pointsRepartition, ",") {
 			value, err := strconv.Atoi(strings.TrimSpace(i))
 			if err == nil {
-				ll.Server.Info.LiveInfo.PointsRepartition = append(ll.Server.Info.LiveInfo.PointsRepartition, value)
+				repartitionList = append(repartitionList, value)
 			}
 		}
+		ll.Server.Info.LiveInfo.PointsRepartition = repartitionList
 	}
 }
 
