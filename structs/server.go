@@ -76,6 +76,7 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 
 func (s *Server) ResetLiveInfo() {
 	liveInfo := &LiveInfo{
+		PointsRepartition: []int{},
 		Teams:   make(map[int]Team),
 		Players: make(map[string]PlayerRound),
 		ActiveRound: ActiveRound{

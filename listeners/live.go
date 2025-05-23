@@ -1,6 +1,7 @@
 package listeners
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -118,15 +119,15 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 	if ll.Server.Info.LiveInfo.Type != "timeattack" {
 		return
 	}
-	
+
 	p := ll.Server.Info.LiveInfo.Players[playerFinishEvent.Login]
 	if p.BestTime > 0 && p.BestTime <= playerFinishEvent.RaceTime {
 		return
 	}
-	
+
 	p.BestTime = playerFinishEvent.RaceTime
 	ll.Server.Info.LiveInfo.Players[playerFinishEvent.Login] = p
-	
+
 	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 		"personalBest": ll.Server.Info.LiveInfo,
 	})
@@ -552,9 +553,14 @@ func (ll *LiveListener) setScriptSettings() {
 
 	plVar := "S_PointsLimit"
 	mlVar := "S_MapsPerMatch"
+	prVar := "S_PointsRepartition"
 	if ll.Server.Info.LiveInfo.Type == "tmwc" || ll.Server.Info.LiveInfo.Type == "tmwt" {
 		plVar = "S_MapPointsLimit"
 		mlVar = "S_MatchPointsLimit"
+	}
+
+	if ll.Server.Info.LiveInfo.Type == "knockout" {
+		prVar = "S_EliminatedPlayersNbRanks"
 	}
 
 	// Set points limit
@@ -587,6 +593,19 @@ func (ll *LiveListener) setScriptSettings() {
 		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", ll.Server.Id))
 	} else if nbWinners > 0 {
 		ll.Server.Info.LiveInfo.NbWinners = &nbWinners
+	}
+
+	// Set points repartition
+	pointsRepartition, ok := scriptSettings[prVar].(string)
+	if !ok {
+		zap.L().Debug("PointsRepartition not found in script settings", zap.Int("server_id", ll.Server.Id))
+	} else if len(pointsRepartition) > 0 {
+		for i := range strings.SplitSeq(pointsRepartition, ",") {
+			value, err := strconv.Atoi(strings.TrimSpace(i))
+			if err == nil {
+				ll.Server.Info.LiveInfo.PointsRepartition = append(ll.Server.Info.LiveInfo.PointsRepartition, value)
+			}
+		}
 	}
 }
 

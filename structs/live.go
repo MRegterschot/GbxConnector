@@ -11,6 +11,7 @@ type LiveInfo struct {
 	RoundsLimit       *int     `json:"roundsLimit,omitempty"`
 	MapLimit          *int     `json:"mapLimit,omitempty"`
 	NbWinners         *int     `json:"nbWinners,omitempty"`
+	PointsRepartition []int    `json:"pointsRepartition"`
 	PauseAvailable    bool     `json:"pauseAvailable"`
 	IsPaused          bool     `json:"isPaused"`
 	Maps              []string `json:"maps"`
