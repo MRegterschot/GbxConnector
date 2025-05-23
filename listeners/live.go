@@ -95,10 +95,15 @@ func AddLiveListeners(server *structs.Server) *LiveListener {
 		Call: ll.onEcho,
 	})
 
-	server.Client.OnAnyCallback = append(server.Client.OnAnyCallback, gbxclient.GbxCallbackStruct[gbxclient.CallbackEventArgs]{
+	server.Client.OnElimination = append(server.Client.OnElimination, gbxclient.GbxCallbackStruct[events.EliminationEventArgs]{
 		Key:  "gbxconnector",
-		Call: ll.onAnyCallack,
+		Call: ll.onElimination,
 	})
+
+	// server.Client.OnAnyCallback = append(server.Client.OnAnyCallback, gbxclient.GbxCallbackStruct[gbxclient.CallbackEventArgs]{
+	// 	Key:  "gbxconnector",
+	// 	Call: ll.onAnyCallack,
+	// })
 
 	return ll
 }
@@ -369,6 +374,21 @@ func (ll *LiveListener) onEcho(echoEvent events.EchoEventArgs) {
 			"updatedSettings": ll.Server.Info.LiveInfo,
 		})
 	}
+}
+
+func (ll *LiveListener) onElimination(eliminationEvent events.EliminationEventArgs) {
+	for _, accountId := range eliminationEvent.AccountIds {
+		for _, player := range ll.Server.Info.LiveInfo.Players {
+			if player.AccountId == accountId {
+				player.Eliminated = true
+				ll.Server.Info.LiveInfo.Players[player.Login] = player
+			}
+		}
+	}
+
+	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+		"elimination": ll.Server.Info.LiveInfo,
+	})
 }
 
 func (ll *LiveListener) onAnyCallack(event gbxclient.CallbackEventArgs) {

@@ -37,6 +37,7 @@ type PlayerRound struct {
 	Rank            int    `json:"rank"`
 	Finalist        bool   `json:"finalist"`
 	Winner          bool   `json:"winner"`
+	Eliminated      bool   `json:"eliminated"`
 	RoundPoints     int    `json:"roundPoints"`
 	MatchPoints     int    `json:"matchPoints"`
 	BestTime        int    `json:"bestTime"`
