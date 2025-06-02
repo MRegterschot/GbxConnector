@@ -42,10 +42,6 @@ func SetupAndRunApp() (*http.Server, error) {
 		}
 	}()
 
-	if len(config.AppEnv.CorsOrigins) == 0 {
-		zap.L().Warn("No CORS origins configured, allowing all origins")
-	}
-
 	// Create a new Gorilla Mux router
 	router := mux.NewRouter()
 

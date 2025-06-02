@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/MRegterschot/GbxConnector/lib"
@@ -39,7 +38,6 @@ func LoadEnv() error {
 
 	AppEnv = &structs.Env{
 		Port:              port,
-		CorsOrigins:       strings.Split(os.Getenv("CORS_ORIGINS"), ","),
 		LogLevel:          os.Getenv("LOG_LEVEL"),
 		JwtSecret:         os.Getenv("JWT_SECRET"),
 		InternalApiKey:    os.Getenv("INTERNAL_API_KEY"),

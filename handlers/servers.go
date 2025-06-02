@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"slices"
 	"strconv"
 	"sync"
 
@@ -15,30 +14,7 @@ import (
 )
 
 // Define WebSocket upgrader
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		allowedOrigins := config.AppEnv.CorsOrigins
-
-		// If no origin header is present, deny the request
-		if origin == "" {
-			return false
-		}
-
-		// Check for empty allowed origins
-		if len(allowedOrigins) == 0 {
-			return true
-		}
-
-		// Check for allow all origins
-		if slices.Contains(allowedOrigins, "*") {
-			return true
-		}
-
-		// Check if the origin is in the allowed origins
-		return slices.Contains(allowedOrigins, origin)
-	},
-}
+var upgrader = websocket.Upgrader{}
 
 type ServerSocket struct {
 	Clients   map[*websocket.Conn]bool // Connected clients

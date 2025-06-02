@@ -6,7 +6,6 @@ import (
 
 type Env struct {
 	Port              int
-	CorsOrigins       []string
 	LogLevel          string
 	ReconnectInterval time.Duration
 	JwtSecret         string
