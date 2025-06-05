@@ -26,6 +26,8 @@ func SetupRoutes(r *mux.Router) {
 	r.Handle("/servers/{id:[0-9]+}", adminOnly(http.HandlerFunc(handlers.HandleDeleteServer))).Methods("DELETE")
 	r.Handle("/servers/{id:[0-9]+}", adminOnly(http.HandlerFunc(handlers.HandleUpdateServer))).Methods("PUT")
 	r.Handle("/servers/order", adminOnly(http.HandlerFunc(handlers.HandleOrderServers))).Methods("PUT")
+	r.Handle("/chat/{id:[0-9]+}/config", moderatorOrAdmin(http.HandlerFunc(handlers.HandleGetChatConfig))).Methods("GET")
+	r.Handle("/chat/{id:[0-9]+}/config", adminOnly(http.HandlerFunc(handlers.HandleUpdateChatConfig))).Methods("PUT")
 
 	r.Handle("/ws/map/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandleMapConnection))).Methods("GET")
 	r.Handle("/ws/players/{id:[0-9]+}", moderatorOrAdmin(http.HandlerFunc(handlers.HandlePlayersConnection))).Methods("GET")
