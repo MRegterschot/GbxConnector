@@ -231,7 +231,7 @@ func (ll *LiveListener) onEndMap(endMapEvent events.MapEventArgs) {
 }
 
 func (ll *LiveListener) onBeginMatch(_ struct{}) {
-	ll.SyncLiveInfo()
+	SyncLiveInfo(ll.Server)
 
 	time.Sleep(300 * time.Millisecond) // Wait a bit for callbacks to be set
 
@@ -364,7 +364,7 @@ func (ll *LiveListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDi
 
 func (ll *LiveListener) onEcho(echoEvent events.EchoEventArgs) {
 	if echoEvent.Internal == "UpdatedSettings" {
-		ll.setScriptSettings()
+		setScriptSettings(ll.Server)
 		handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
 			"updatedSettings": ll.Server.Info.LiveInfo,
 		})
@@ -386,73 +386,73 @@ func (ll *LiveListener) onElimination(eliminationEvent events.EliminationEventAr
 	})
 }
 
-func (ll *LiveListener) SyncLiveInfo() {
+func SyncLiveInfo(server *structs.Server) {
 	// Set warmup status
-	ll.Server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
-		onWarmUpStatus(event, ll.Server)
+	server.Client.AddScriptCallback("Trackmania.WarmUp.Status", "server", func(event any) {
+		onWarmUpStatus(event, server)
 	})
-	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.WarmUp.GetStatus", []string{"gbxconnector"})
+	server.Client.TriggerModeScriptEventArray("Trackmania.WarmUp.GetStatus", []string{"gbxconnector"})
 
 	// Set the current game mode
-	mode, err := ll.Server.Client.GetScriptName()
+	mode, err := server.Client.GetScriptName()
 	if err != nil {
-		zap.L().Error("Failed to get script name", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get script name", zap.Int("server_id", server.Id), zap.Error(err))
 	}
 
-	ll.Server.Info.LiveInfo.Mode = mode.CurrentValue
+	server.Info.LiveInfo.Mode = mode.CurrentValue
 
 	modeLower := strings.ToLower(mode.CurrentValue)
 
 	// Set the type
 	switch {
 	case strings.Contains(modeLower, "timeattack"):
-		ll.Server.Info.LiveInfo.Type = "timeattack"
+		server.Info.LiveInfo.Type = "timeattack"
 	case strings.Contains(modeLower, "rounds"):
-		ll.Server.Info.LiveInfo.Type = "rounds"
+		server.Info.LiveInfo.Type = "rounds"
 	case strings.Contains(modeLower, "cup"):
-		ll.Server.Info.LiveInfo.Type = "cup"
+		server.Info.LiveInfo.Type = "cup"
 	case strings.Contains(modeLower, "tmwc"):
-		ll.Server.Info.LiveInfo.Type = "tmwc"
+		server.Info.LiveInfo.Type = "tmwc"
 	case strings.Contains(modeLower, "tmwt"):
-		ll.Server.Info.LiveInfo.Type = "tmwt"
+		server.Info.LiveInfo.Type = "tmwt"
 	case strings.Contains(modeLower, "teams"):
-		ll.Server.Info.LiveInfo.Type = "teams"
+		server.Info.LiveInfo.Type = "teams"
 	case strings.Contains(modeLower, "knockout"):
-		ll.Server.Info.LiveInfo.Type = "knockout"
+		server.Info.LiveInfo.Type = "knockout"
 	default:
-		ll.Server.Info.LiveInfo.Type = "rounds"
+		server.Info.LiveInfo.Type = "rounds"
 	}
 
-	mapInfo, err := ll.Server.Client.GetCurrentMapInfo()
+	mapInfo, err := server.Client.GetCurrentMapInfo()
 	if err != nil {
-		zap.L().Error("Failed to get current map info", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get current map info", zap.Int("server_id", server.Id), zap.Error(err))
 	}
 
-	ll.Server.Info.LiveInfo.CurrentMap = mapInfo.UId
+	server.Info.LiveInfo.CurrentMap = mapInfo.UId
 
-	ll.setScriptSettings()
+	setScriptSettings(server)
 
 	// Set map list
-	mapList, err := ll.Server.Client.GetMapList(1000, 0)
+	mapList, err := server.Client.GetMapList(1000, 0)
 	if err != nil {
-		zap.L().Error("Failed to get map list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get map list", zap.Int("server_id", server.Id), zap.Error(err))
 	}
 
-	ll.Server.Info.LiveInfo.Maps = make([]string, len(mapList))
+	server.Info.LiveInfo.Maps = make([]string, len(mapList))
 	for i, m := range mapList {
-		ll.Server.Info.LiveInfo.Maps[i] = m.UId
+		server.Info.LiveInfo.Maps[i] = m.UId
 	}
 
-	ll.Server.Client.AddScriptCallback("Trackmania.Scores", "server", func(event any) {
-		onScores(event, ll.Server)
+	server.Client.AddScriptCallback("Trackmania.Scores", "server", func(event any) {
+		onScores(event, server)
 	})
-	ll.Server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
+	server.Client.TriggerModeScriptEventArray("Trackmania.GetScores", []string{"gbxconnector"})
 
 	// Set pause status
-	ll.Server.Client.AddScriptCallback("Maniaplanet.Pause.Status", "server", func(event any) {
-		onPauseStatus(event, ll.Server)
+	server.Client.AddScriptCallback("Maniaplanet.Pause.Status", "server", func(event any) {
+		onPauseStatus(event, server)
 	})
-	ll.Server.Client.TriggerModeScriptEventArray("Maniaplanet.Pause.GetStatus", []string{"gbxconnector"})
+	server.Client.TriggerModeScriptEventArray("Maniaplanet.Pause.GetStatus", []string{"gbxconnector"})
 }
 
 func onWarmUpStatus(event any, server *structs.Server) {
@@ -553,61 +553,61 @@ func onPauseStatus(event any, server *structs.Server) {
 	server.Info.LiveInfo.IsPaused = status.Active
 }
 
-func (ll *LiveListener) setScriptSettings() {
+func setScriptSettings(server *structs.Server) {
 	// Get script settings
-	scriptSettings, err := ll.Server.Client.GetModeScriptSettings()
+	scriptSettings, err := server.Client.GetModeScriptSettings()
 	if err != nil {
-		zap.L().Error("Failed to get script settings", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get script settings", zap.Int("server_id", server.Id), zap.Error(err))
 	}
 
 	plVar := "S_PointsLimit"
 	mlVar := "S_MapsPerMatch"
 	prVar := "S_PointsRepartition"
-	if ll.Server.Info.LiveInfo.Type == "tmwc" || ll.Server.Info.LiveInfo.Type == "tmwt" {
+	if server.Info.LiveInfo.Type == "tmwc" || server.Info.LiveInfo.Type == "tmwt" {
 		plVar = "S_MapPointsLimit"
 		mlVar = "S_MatchPointsLimit"
 	}
 
-	if ll.Server.Info.LiveInfo.Type == "knockout" {
+	if server.Info.LiveInfo.Type == "knockout" {
 		prVar = "S_EliminatedPlayersNbRanks"
 	}
 
 	// Set points limit
 	pointsLimit, ok := scriptSettings[plVar].(int)
 	if !ok {
-		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", server.Id))
 	} else if pointsLimit > 0 {
-		ll.Server.Info.LiveInfo.PointsLimit = &pointsLimit
+		server.Info.LiveInfo.PointsLimit = &pointsLimit
 	}
 
 	// Set rounds limit
 	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
 	if !ok {
-		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", server.Id))
 	} else if roundsLimit > 0 {
-		ll.Server.Info.LiveInfo.RoundsLimit = &roundsLimit
+		server.Info.LiveInfo.RoundsLimit = &roundsLimit
 	}
 
 	// Set map limit
 	mapLimit, ok := scriptSettings[mlVar].(int)
 	if !ok {
-		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", ll.Server.Id))
+		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", server.Id))
 	} else if mapLimit > 0 {
-		ll.Server.Info.LiveInfo.MapLimit = &mapLimit
+		server.Info.LiveInfo.MapLimit = &mapLimit
 	}
 
 	// Set number of winners
 	nbWinners, ok := scriptSettings["S_NbOfWinners"].(int)
 	if !ok {
-		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", ll.Server.Id))
+		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", server.Id))
 	} else if nbWinners > 0 {
-		ll.Server.Info.LiveInfo.NbWinners = &nbWinners
+		server.Info.LiveInfo.NbWinners = &nbWinners
 	}
 
 	// Set points repartition
 	pointsRepartition, ok := scriptSettings[prVar].(string)
 	if !ok {
-		zap.L().Debug("PointsRepartition not found in script settings", zap.Int("server_id", ll.Server.Id))
+		zap.L().Debug("PointsRepartition not found in script settings", zap.Int("server_id", server.Id))
 	} else if len(pointsRepartition) > 0 {
 		repartitionList := []int{}
 		for i := range strings.SplitSeq(pointsRepartition, ",") {
@@ -616,7 +616,7 @@ func (ll *LiveListener) setScriptSettings() {
 				repartitionList = append(repartitionList, value)
 			}
 		}
-		ll.Server.Info.LiveInfo.PointsRepartition = repartitionList
+		server.Info.LiveInfo.PointsRepartition = repartitionList
 	}
 }
 

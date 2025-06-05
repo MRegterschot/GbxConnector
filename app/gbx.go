@@ -26,15 +26,14 @@ func GetClient(server *structs.Server) error {
 	// Add listeners
 	listeners.AddConnectionListeners(server)
 	listeners.AddMapListeners(server)
-	pl := listeners.AddPlayersListeners(server)
-	ll := listeners.AddLiveListeners(server)
+
+	listeners.AddPlayersListeners(server)
+	listeners.AddLiveListeners(server)
+	listeners.AddChatListeners(server)
 
 	if err := ConnectClient(server); err != nil {
 		return err
 	}
-
-	pl.SyncPlayerList()
-	ll.SyncLiveInfo()
 
 	return nil
 }
@@ -71,6 +70,17 @@ func ConnectClient(server *structs.Server) error {
 
 	// Set the map info
 	server.Info.ActiveMap = mapInfo.UId
+
+	// Enable manual chat routing
+	if err = server.Client.ChatEnableManualRouting(true, true); err != nil {
+		zap.L().Error("Failed to enable manual chat routing", zap.Int("server_id", server.Id), zap.Error(err))
+		server.Info.Chat.ManualRouting = false
+	} else {
+		server.Info.Chat.ManualRouting = true
+	}
+
+	listeners.SyncPlayerList(server)
+	listeners.SyncLiveInfo(server)
 
 	return nil
 }

@@ -88,14 +88,14 @@ func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.Pla
 	})
 }
 
-func (pl *PlayersListener) SyncPlayerList() {
-	players, err := pl.Server.Client.GetPlayerList(1000, 0)
+func SyncPlayerList(server *structs.Server) {
+	players, err := server.Client.GetPlayerList(1000, 0)
 	if err != nil {
 		zap.L().Error("Failed to get player list", zap.Error(err))
 		return
 	}
 
-	mainServerInfo, err := pl.Server.Client.GetMainServerPlayerInfo()
+	mainServerInfo, err := server.Client.GetMainServerPlayerInfo()
 	if err != nil {
 		zap.L().Error("Failed to get main server info", zap.Error(err))
 		return
@@ -110,9 +110,9 @@ func (pl *PlayersListener) SyncPlayerList() {
 		playerList = append(playerList, structs.ToPlayerInfo(player))
 	}
 
-	pl.Server.Info.ActivePlayers = playerList
+	server.Info.ActivePlayers = playerList
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string][]structs.PlayerInfo{
+	handlers.BroadcastPlayers(server.Id, map[string][]structs.PlayerInfo{
 		"playerList": playerList,
 	})
 }

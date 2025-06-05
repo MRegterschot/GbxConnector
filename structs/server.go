@@ -29,8 +29,8 @@ type ServerInfo struct {
 	ActiveMap     string       `json:"-"`
 	ActivePlayers []PlayerInfo `json:"-"`
 	LiveInfo      *LiveInfo    `json:"-"`
+	Chat          ChatConfig   `json:"-"`
 }
-
 
 func (s *Server) ToServerResponse() ServerResponse {
 	isConnected := false
@@ -77,8 +77,8 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 func (s *Server) ResetLiveInfo() {
 	liveInfo := &LiveInfo{
 		PointsRepartition: []int{},
-		Teams:   make(map[int]Team),
-		Players: make(map[string]PlayerRound),
+		Teams:             make(map[int]Team),
+		Players:           make(map[string]PlayerRound),
 		ActiveRound: ActiveRound{
 			Players: make(map[string]PlayerWaypoint),
 		},
