@@ -30,7 +30,10 @@ func (cl *ChatListener) onPlayerChat(playerChatEvent events.PlayerChatEventArgs)
 		return
 	}
 
-	cl.Server.Info.Chat.OverrideFormat = "{nickName}: {message} {message}"
+	// If the message starts with a slash, we don't need to handle the chat message
+	if len(playerChatEvent.Text) > 0 && playerChatEvent.Text[0] == '/' {
+		return
+	}
 
 	if cl.Server.Info.Chat.OverrideFormat == "" {
 		// If no override format is set, just send the raw message to everyone
