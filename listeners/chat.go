@@ -16,6 +16,16 @@ func AddChatListeners(server *structs.Server) *ChatListener {
 		Key:  "ChatListener",
 		Call: cl.onPlayerChat,
 	})
+
+	server.Client.OnPlayerConnect = append(server.Client.OnPlayerConnect, gbxclient.GbxCallbackStruct[events.PlayerConnectEventArgs]{
+		Key:  "ChatListener",
+		Call: cl.onPlayerConnect,
+	})
+
+	server.Client.OnPlayerDisconnect = append(server.Client.OnPlayerDisconnect, gbxclient.GbxCallbackStruct[events.PlayerDisconnectEventArgs]{
+		Key:  "ChatListener",
+		Call: cl.onPlayerDisconnect,
+	})
 	return cl
 }
 
@@ -54,6 +64,50 @@ func (cl *ChatListener) onPlayerChat(playerChatEvent events.PlayerChatEventArgs)
 		player.Login,
 		player.NickName,
 		playerChatEvent.Text,
+	)
+
+	cl.Server.Client.ChatSendServerMessage(message)
+}
+
+func (cl *ChatListener) onPlayerConnect(playerConnectEvent events.PlayerConnectEventArgs) {
+	if cl.Server.Info.Chat.ConnectMessage == "" {
+		return
+	}
+
+	var player structs.PlayerInfo
+	for _, p := range cl.Server.Info.ActivePlayers {
+		if p.Login == playerConnectEvent.Login {
+			player = p
+			break
+		}
+	}
+
+	message := cl.Server.Info.Chat.ConnectMessage.FormatMessage(
+		player.Login,
+		player.NickName,
+		"",
+	)
+
+	cl.Server.Client.ChatSendServerMessage(message)
+}
+
+func (cl *ChatListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDisconnectEventArgs) {
+	if cl.Server.Info.Chat.DisconnectMessage == "" {
+		return
+	}
+
+	var player structs.PlayerInfo
+	for _, p := range cl.Server.Info.ActivePlayers {
+		if p.Login == playerDisconnectEvent.Login {
+			player = p
+			break
+		}
+	}
+
+	message := cl.Server.Info.Chat.DisconnectMessage.FormatMessage(
+		player.Login,
+		player.NickName,
+		"",
 	)
 
 	cl.Server.Client.ChatSendServerMessage(message)

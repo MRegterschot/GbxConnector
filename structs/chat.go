@@ -7,8 +7,10 @@ import (
 type MessageFormat string
 
 type ChatConfig struct {
-	ManualRouting bool          `json:"manualRouting"`
-	MessageFormat MessageFormat `json:"messageFormat,omitempty"`
+	ManualRouting     bool          `json:"manualRouting"`
+	MessageFormat     MessageFormat `json:"messageFormat,omitempty"`
+	ConnectMessage    MessageFormat `json:"connectMessage,omitempty"`
+	DisconnectMessage MessageFormat `json:"disconnectMessage,omitempty"`
 }
 
 // Format the message according to the MessageFormat.
