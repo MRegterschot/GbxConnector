@@ -8,7 +8,7 @@ type MessageFormat string
 
 type ChatConfig struct {
 	ManualRouting bool          `json:"manualRouting"`
-	MessageFormat MessageFormat `json:"overrideFormat,omitempty"`
+	MessageFormat MessageFormat `json:"messageFormat,omitempty"`
 }
 
 // Format the message according to the MessageFormat.
