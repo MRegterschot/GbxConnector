@@ -58,7 +58,10 @@ func HandleUpdateChatConfig(w http.ResponseWriter, r *http.Request) {
 		if server.Id == serverId {
 			server.Info.Chat = chatConfig
 			zap.L().Info("Updated chat config", zap.Int("server_id", server.Id), zap.Any("chat_config", chatConfig))
-			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(server.Info.Chat); err != nil {
+				zap.L().Error("Failed to encode updated chat config", zap.Error(err))
+				http.Error(w, "Failed to encode updated chat config", http.StatusInternalServerError)
+			}
 			return
 		}
 	}
