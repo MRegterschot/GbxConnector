@@ -71,6 +71,11 @@ func ConnectClient(server *structs.Server) error {
 	// Set the map info
 	server.Info.ActiveMap = mapInfo.UId
 
+	if err := server.Client.ChatEnableManualRouting(false, true); err != nil {
+		zap.L().Error("Failed to disable manual routing", zap.Int("server_id", server.Id), zap.Error(err))
+	}
+	server.Info.Chat.ManualRouting = false
+
 	listeners.SyncPlayerList(server)
 	listeners.SyncLiveInfo(server)
 
