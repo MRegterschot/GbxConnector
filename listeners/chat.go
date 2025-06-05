@@ -30,6 +30,8 @@ func (cl *ChatListener) onPlayerChat(playerChatEvent events.PlayerChatEventArgs)
 		return
 	}
 
+	cl.Server.Info.Chat.OverrideFormat = "{nickName}: {message} {message}"
+
 	if cl.Server.Info.Chat.OverrideFormat == "" {
 		// If no override format is set, just send the raw message to everyone
 		cl.Server.Client.ChatForwardToLogin(playerChatEvent.Text, playerChatEvent.Login, "")
