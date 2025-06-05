@@ -56,6 +56,12 @@ func HandleUpdateChatConfig(w http.ResponseWriter, r *http.Request) {
 
 	for _, server := range config.AppEnv.Servers {
 		if server.Id == serverId {
+			if err := server.Client.ChatEnableManualRouting(chatConfig.ManualRouting, true); err != nil {
+				zap.L().Error("Failed to enable manual routing", zap.Error(err))
+				http.Error(w, "Failed to enable manual routing", http.StatusInternalServerError)
+				return
+			}
+
 			server.Info.Chat = chatConfig
 			zap.L().Info("Updated chat config", zap.Int("server_id", server.Id), zap.Any("chat_config", chatConfig))
 			if err := json.NewEncoder(w).Encode(server.Info.Chat); err != nil {
