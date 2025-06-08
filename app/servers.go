@@ -55,7 +55,7 @@ func AddServer(server *structs.Server) (*structs.Server, error) {
 		return nil, err
 	}
 
-	zap.L().Info("New server added", zap.Int("server_id", server.Id))
+	zap.L().Info("New server added", zap.String("uuid", server.Uuid))
 
 	GetClient(server)
 	handlers.GetMapSocket(server.Id)
@@ -72,15 +72,15 @@ func AddServer(server *structs.Server) (*structs.Server, error) {
 	return server, nil
 }
 
-func DeleteServer(serverId int) error {
+func DeleteServer(serverUuid string) error {
 	for i, server := range config.AppEnv.Servers {
-		if server.Id == serverId {
+		if server.Uuid == serverUuid {
 			config.AppEnv.Servers = slices.Delete(config.AppEnv.Servers, i, i+1)
 			if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
 				zap.L().Error("Failed to write servers.json", zap.Error(err))
 				return err
 			}
-			zap.L().Info("Server deleted", zap.Int("server_id", serverId))
+			zap.L().Info("Server deleted", zap.String("server_uuid", serverUuid))
 			handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
 			ShutdownServer(server)
 			return nil
@@ -89,9 +89,9 @@ func DeleteServer(serverId int) error {
 	return errors.New("server not found")
 }
 
-func UpdateServer(serverId int, serverInput *structs.Server) (*structs.Server, error) {
+func UpdateServer(serverUuid string, serverInput *structs.Server) (*structs.Server, error) {
 	for _, server := range config.AppEnv.Servers {
-		if server.Id == serverId {
+		if server.Uuid == serverUuid {
 			server.UpdateServer(
 				serverInput.Name,
 				serverInput.Description,
@@ -106,7 +106,7 @@ func UpdateServer(serverId int, serverInput *structs.Server) (*structs.Server, e
 				zap.L().Error("Failed to write servers.json", zap.Error(err))
 				return nil, err
 			}
-			zap.L().Info("Server updated", zap.Int("server_id", serverId))
+			zap.L().Info("Server updated", zap.String("server_uuid", serverUuid))
 
 			ShutdownServer(server)
 			GetClient(server)
@@ -125,12 +125,12 @@ func UpdateServer(serverId int, serverInput *structs.Server) (*structs.Server, e
 	return nil, errors.New("server not found")
 }
 
-func OrderServers(serverIds []int) (structs.ServerList, error) {
+func OrderServers(serverUuids []string) (structs.ServerList, error) {
 	// Check if all server IDs are valid
-	for _, serverId := range serverIds {
+	for _, serverUuid := range serverUuids {
 		found := false
 		for _, server := range config.AppEnv.Servers {
-			if server.Id == serverId {
+			if server.Uuid == serverUuid {
 				found = true
 				break
 			}
@@ -141,10 +141,10 @@ func OrderServers(serverIds []int) (structs.ServerList, error) {
 	}
 
 	// Update the order of the servers
-	newServers := make([]*structs.Server, len(serverIds))
-	for i, serverId := range serverIds {
+	newServers := make([]*structs.Server, len(serverUuids))
+	for i, serverUuid := range serverUuids {
 		for _, server := range config.AppEnv.Servers {
-			if server.Id == serverId {
+			if server.Uuid == serverUuid {
 				newServers[i] = server
 				break
 			}
@@ -165,6 +165,6 @@ func OrderServers(serverIds []int) (structs.ServerList, error) {
 
 	// Broadcast the updated server list
 	handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
-	zap.L().Info("Server order updated", zap.Ints("server_ids", serverIds))
+	zap.L().Info("Server order updated", zap.Strings("server_uuids", serverUuids))
 	return config.AppEnv.Servers, nil
 }

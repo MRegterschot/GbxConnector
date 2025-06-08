@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/MRegterschot/GbxConnector/config"
@@ -31,9 +30,9 @@ var serverSocket = &ServerSocket{
 }
 
 type ServerAdderFunc func(server *structs.Server) (*structs.Server, error)
-type ServerRemoverFunc func(serverId int) error
-type ServerUpdaterFunc func(serverId int, server *structs.Server) (*structs.Server, error)
-type ServersOrderFunc func(order []int) (structs.ServerList, error)
+type ServerRemoverFunc func(serverUuid string) error
+type ServerUpdaterFunc func(serverUuid string, server *structs.Server) (*structs.Server, error)
+type ServersOrderFunc func(order []string) (structs.ServerList, error)
 
 var addServerFunc ServerAdderFunc
 var removeServerFunc ServerRemoverFunc
@@ -155,14 +154,7 @@ func HandleAddServer(w http.ResponseWriter, r *http.Request) {
 // HandleDeleteServer handles requests to delete a server
 func HandleDeleteServer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	serverIDStr := vars["id"]
-
-	serverId, err := strconv.Atoi(serverIDStr)
-	if err != nil {
-		zap.L().Error("Invalid server ID", zap.Error(err))
-		http.Error(w, "Invalid server ID", http.StatusBadRequest)
-		return
-	}
+	serverUuid := vars["uuid"]
 
 	if removeServerFunc == nil {
 		zap.L().Error("Remove server function not set")
@@ -170,7 +162,7 @@ func HandleDeleteServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := removeServerFunc(serverId); err != nil {
+	if err := removeServerFunc(serverUuid); err != nil {
 		zap.L().Error("Failed to remove server", zap.Error(err))
 		http.Error(w, "Failed to remove server", http.StatusInternalServerError)
 		return
@@ -185,14 +177,7 @@ func HandleDeleteServer(w http.ResponseWriter, r *http.Request) {
 // HandleUpdateServer handles requests to update a server
 func HandleUpdateServer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	serverIDStr := vars["id"]
-
-	serverId, err := strconv.Atoi(serverIDStr)
-	if err != nil {
-		zap.L().Error("Invalid server ID", zap.Error(err))
-		http.Error(w, "Invalid server ID", http.StatusBadRequest)
-		return
-	}
+	serverUuid := vars["uuid"]
 
 	var server structs.Server
 	if err := json.NewDecoder(r.Body).Decode(&server); err != nil {
@@ -207,7 +192,7 @@ func HandleUpdateServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedServer, err := updateServerFunc(serverId, &server)
+	updatedServer, err := updateServerFunc(serverUuid, &server)
 	if err != nil {
 		zap.L().Error("Failed to update server", zap.Error(err))
 		http.Error(w, "Failed to update server", http.StatusInternalServerError)
@@ -226,7 +211,7 @@ func HandleUpdateServer(w http.ResponseWriter, r *http.Request) {
 
 // HandleOrderServers handles requests to order servers
 func HandleOrderServers(w http.ResponseWriter, r *http.Request) {
-	var order []int
+	var order []string
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		zap.L().Error("Failed to decode order", zap.Error(err))
 		http.Error(w, "Failed to decode order", http.StatusBadRequest)
