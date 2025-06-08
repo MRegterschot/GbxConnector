@@ -55,11 +55,11 @@ func AddServer(server *structs.Server) (*structs.Server, error) {
 		return nil, err
 	}
 
-	zap.L().Info("New server added", zap.String("uuid", server.Uuid))
+	zap.L().Info("New server added", zap.String("server_uuid", server.Uuid))
 
 	GetClient(server)
-	handlers.GetMapSocket(server.Id)
-	handlers.GetPlayersSocket(server.Id)
+	handlers.GetMapSocket(server.Uuid)
+	handlers.GetPlayersSocket(server.Uuid)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	server.Ctx = ctx
@@ -110,8 +110,8 @@ func UpdateServer(serverUuid string, serverInput *structs.Server) (*structs.Serv
 
 			ShutdownServer(server)
 			GetClient(server)
-			handlers.GetMapSocket(server.Id)
-			handlers.GetPlayersSocket(server.Id)
+			handlers.GetMapSocket(server.Uuid)
+			handlers.GetPlayersSocket(server.Uuid)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			server.Ctx = ctx

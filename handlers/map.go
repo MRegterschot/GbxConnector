@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/structs"
@@ -11,27 +10,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var mapSockets = make(map[int]*structs.SocketClients) // Map of socket clients by server ID
+var mapSockets = make(map[string]*structs.SocketClients) // Map of socket clients by server ID
 
-func GetMapSocket(serverId int) *structs.SocketClients {
-	if _, ok := mapSockets[serverId]; !ok {
-		mapSockets[serverId] = &structs.SocketClients{
+func GetMapSocket(serverUuid string) *structs.SocketClients {
+	if _, ok := mapSockets[serverUuid]; !ok {
+		mapSockets[serverUuid] = &structs.SocketClients{
 			Clients: make(map[*websocket.Conn]bool),
 		}
 	}
-	return mapSockets[serverId]
+	return mapSockets[serverUuid]
 }
 
 // WebSocket connection handler
 func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	serverIDStr := vars["id"]
-
-	serverId, err := strconv.Atoi(serverIDStr)
-	if err != nil {
-		http.Error(w, "Invalid server ID", http.StatusBadRequest)
-		return
-	}
+	serverUuid := vars["uuid"]
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -40,7 +33,7 @@ func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save connection
-	ms := GetMapSocket(serverId)
+	ms := GetMapSocket(serverUuid)
 	ms.ClientsMu.Lock()
 	ms.Clients[conn] = true
 	ms.ClientsMu.Unlock()
@@ -48,7 +41,7 @@ func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	// Get current active map of the server
 	var activeMap string
 	for _, server := range config.AppEnv.Servers {
-		if server.Id == serverId {
+		if server.Uuid == serverUuid {
 			activeMap = server.Info.ActiveMap
 			break
 		}
@@ -68,7 +61,7 @@ func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for {
 			if _, _, err := conn.NextReader(); err != nil {
-				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Int("serverId", serverId))
+				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.String("server_uuid", serverUuid))
 				ms.ClientsMu.Lock()
 				delete(ms.Clients, conn)
 				ms.ClientsMu.Unlock()
@@ -80,10 +73,10 @@ func HandleMapConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 // Broadcast message to all connected clients
-func BroadcastMap(serverId int, message any) {
-	ms := GetMapSocket(serverId)
+func BroadcastMap(serverUuid string, message any) {
+	ms := GetMapSocket(serverUuid)
 	if ms == nil {
-		zap.L().Error("Map socket not found", zap.Int("serverId", serverId))
+		zap.L().Error("Map socket not found", zap.String("server_uuid", serverUuid))
 		return
 	}
 

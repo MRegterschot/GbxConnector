@@ -112,7 +112,7 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerFinishEvent.Login] = pw
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]structs.ActiveRound{
 		"finish": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 
@@ -128,7 +128,7 @@ func (ll *LiveListener) onPlayerFinish(playerFinishEvent events.PlayerWayPointEv
 	p.BestTime = playerFinishEvent.RaceTime
 	ll.Server.Info.LiveInfo.Players[playerFinishEvent.Login] = p
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"personalBest": ll.Server.Info.LiveInfo,
 	})
 }
@@ -143,7 +143,7 @@ func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWa
 
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerCheckpointEvent.Login] = pw
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]structs.ActiveRound{
 		"checkpoint": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
@@ -151,7 +151,7 @@ func (ll *LiveListener) onPlayerCheckpoint(playerCheckpointEvent events.PlayerWa
 func (ll *LiveListener) onStartRound(_ struct{}) {
 	playerList, err := ll.Server.Client.GetPlayerList(1000, 0)
 	if err != nil {
-		zap.L().Error("Failed to get player list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get player list", zap.String("server_uuid", ll.Server.Uuid), zap.Error(err))
 	}
 
 	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
@@ -175,7 +175,7 @@ func (ll *LiveListener) onStartRound(_ struct{}) {
 		}
 	}
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]structs.ActiveRound{
 		"beginRound": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
@@ -211,7 +211,7 @@ func (ll *LiveListener) onEndRound(endRoundEvent events.ScoresEventArgs) {
 
 	time.Sleep(300 * time.Millisecond) // Wait a bit for callbacks to be set
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"endRound": ll.Server.Info.LiveInfo,
 	})
 }
@@ -219,13 +219,13 @@ func (ll *LiveListener) onEndRound(endRoundEvent events.ScoresEventArgs) {
 func (ll *LiveListener) onBeginMap(beginMapEvent events.MapEventArgs) {
 	ll.Server.Info.LiveInfo.CurrentMap = beginMapEvent.Map.Uid
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]string{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]string{
 		"beginMap": beginMapEvent.Map.Uid,
 	})
 }
 
 func (ll *LiveListener) onEndMap(endMapEvent events.MapEventArgs) {
-	handlers.BroadcastLive(ll.Server.Id, map[string]string{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]string{
 		"endMap": endMapEvent.Map.Uid,
 	})
 }
@@ -235,7 +235,7 @@ func (ll *LiveListener) onBeginMatch(_ struct{}) {
 
 	time.Sleep(300 * time.Millisecond) // Wait a bit for callbacks to be set
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"beginMatch": ll.Server.Info.LiveInfo,
 	})
 }
@@ -245,7 +245,7 @@ func (ll *LiveListener) onPlayerGiveUp(playerGiveUpEvent events.PlayerGiveUpEven
 	r.HasGivenUp = true
 	ll.Server.Info.LiveInfo.ActiveRound.Players[playerGiveUpEvent.Login] = r
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]structs.ActiveRound{
 		"giveUp": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
@@ -253,14 +253,14 @@ func (ll *LiveListener) onPlayerGiveUp(playerGiveUpEvent events.PlayerGiveUpEven
 func (ll *LiveListener) onWarmUpStart(_ struct{}) {
 	ll.Server.Info.LiveInfo.IsWarmUp = true
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"warmUpStart": ll.Server.Info.LiveInfo,
 	})
 }
 
 func (ll *LiveListener) onWarmUpEnd(_ struct{}) {
 	ll.Server.Info.LiveInfo.IsWarmUp = false
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"warmUpEnd": ll.Server.Info.LiveInfo,
 	})
 }
@@ -293,7 +293,7 @@ func (ll *LiveListener) onWarmUpStartRound(warmUpEvent events.WarmUpEventArgs) {
 		}
 	}
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"warmUpStartRound": ll.Server.Info.LiveInfo,
 	})
 }
@@ -315,7 +315,7 @@ func (ll *LiveListener) onPlayerInfoChanged(playerInfoChangedEvent events.Player
 		ll.Server.Info.LiveInfo.ActiveRound.Players[playerInfoChangedEvent.PlayerInfo.Login] = playerWaypoint
 	}
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]structs.ActiveRound{
 		"playerInfoChanged": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
@@ -323,7 +323,7 @@ func (ll *LiveListener) onPlayerInfoChanged(playerInfoChangedEvent events.Player
 func (ll *LiveListener) onPlayerConnect(playerConnectEvent events.PlayerConnectEventArgs) {
 	playerInfo, err := ll.Server.Client.GetPlayerInfo(playerConnectEvent.Login)
 	if err != nil {
-		zap.L().Error("Failed to get player info", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get player info", zap.String("server_uuid", ll.Server.Uuid), zap.Error(err))
 		return
 	}
 
@@ -349,7 +349,7 @@ func (ll *LiveListener) onPlayerConnect(playerConnectEvent events.PlayerConnectE
 		delete(ll.Server.Info.LiveInfo.ActiveRound.Players, playerConnectEvent.Login)
 	}
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"playerConnect": ll.Server.Info.LiveInfo,
 	})
 }
@@ -357,7 +357,7 @@ func (ll *LiveListener) onPlayerConnect(playerConnectEvent events.PlayerConnectE
 func (ll *LiveListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDisconnectEventArgs) {
 	delete(ll.Server.Info.LiveInfo.ActiveRound.Players, playerDisconnectEvent.Login)
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]structs.ActiveRound{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]structs.ActiveRound{
 		"playerDisconnect": ll.Server.Info.LiveInfo.ActiveRound,
 	})
 }
@@ -365,7 +365,7 @@ func (ll *LiveListener) onPlayerDisconnect(playerDisconnectEvent events.PlayerDi
 func (ll *LiveListener) onEcho(echoEvent events.EchoEventArgs) {
 	if echoEvent.Internal == "UpdatedSettings" {
 		setScriptSettings(ll.Server)
-		handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+		handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 			"updatedSettings": ll.Server.Info.LiveInfo,
 		})
 	}
@@ -381,7 +381,7 @@ func (ll *LiveListener) onElimination(eliminationEvent events.EliminationEventAr
 		}
 	}
 
-	handlers.BroadcastLive(ll.Server.Id, map[string]*structs.LiveInfo{
+	handlers.BroadcastLive(ll.Server.Uuid, map[string]*structs.LiveInfo{
 		"elimination": ll.Server.Info.LiveInfo,
 	})
 }
@@ -396,7 +396,7 @@ func SyncLiveInfo(server *structs.Server) {
 	// Set the current game mode
 	mode, err := server.Client.GetScriptName()
 	if err != nil {
-		zap.L().Error("Failed to get script name", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to get script name", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 
 	server.Info.LiveInfo.Mode = mode.CurrentValue
@@ -425,7 +425,7 @@ func SyncLiveInfo(server *structs.Server) {
 
 	mapInfo, err := server.Client.GetCurrentMapInfo()
 	if err != nil {
-		zap.L().Error("Failed to get current map info", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to get current map info", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 
 	server.Info.LiveInfo.CurrentMap = mapInfo.UId
@@ -435,7 +435,7 @@ func SyncLiveInfo(server *structs.Server) {
 	// Set map list
 	mapList, err := server.Client.GetMapList(1000, 0)
 	if err != nil {
-		zap.L().Error("Failed to get map list", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to get map list", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 
 	server.Info.LiveInfo.Maps = make([]string, len(mapList))
@@ -513,7 +513,7 @@ func onScores(event any, server *structs.Server) {
 
 	playerList, err := server.Client.GetPlayerList(1000, 0)
 	if err != nil {
-		zap.L().Error("Failed to get player list", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to get player list", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 
 	server.Info.LiveInfo.ActiveRound = structs.ActiveRound{
@@ -557,7 +557,7 @@ func setScriptSettings(server *structs.Server) {
 	// Get script settings
 	scriptSettings, err := server.Client.GetModeScriptSettings()
 	if err != nil {
-		zap.L().Error("Failed to get script settings", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to get script settings", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 
 	plVar := "S_PointsLimit"
@@ -575,7 +575,7 @@ func setScriptSettings(server *structs.Server) {
 	// Set points limit
 	pointsLimit, ok := scriptSettings[plVar].(int)
 	if !ok {
-		zap.L().Debug("PointsLimit not found in script settings", zap.Int("server_id", server.Id))
+		zap.L().Debug("PointsLimit not found in script settings", zap.String("server_uuid", server.Uuid))
 	} else if pointsLimit > 0 {
 		server.Info.LiveInfo.PointsLimit = &pointsLimit
 	}
@@ -583,7 +583,7 @@ func setScriptSettings(server *structs.Server) {
 	// Set rounds limit
 	roundsLimit, ok := scriptSettings["S_RoundsPerMap"].(int)
 	if !ok {
-		zap.L().Debug("RoundsLimit not found in script settings", zap.Int("server_id", server.Id))
+		zap.L().Debug("RoundsLimit not found in script settings", zap.String("server_uuid", server.Uuid))
 	} else if roundsLimit > 0 {
 		server.Info.LiveInfo.RoundsLimit = &roundsLimit
 	}
@@ -591,7 +591,7 @@ func setScriptSettings(server *structs.Server) {
 	// Set map limit
 	mapLimit, ok := scriptSettings[mlVar].(int)
 	if !ok {
-		zap.L().Debug("MapLimit not found in script settings", zap.Int("server_id", server.Id))
+		zap.L().Debug("MapLimit not found in script settings", zap.String("server_uuid", server.Uuid))
 	} else if mapLimit > 0 {
 		server.Info.LiveInfo.MapLimit = &mapLimit
 	}
@@ -599,7 +599,7 @@ func setScriptSettings(server *structs.Server) {
 	// Set number of winners
 	nbWinners, ok := scriptSettings["S_NbOfWinners"].(int)
 	if !ok {
-		zap.L().Debug("NbOfWinners not found in script settings", zap.Int("server_id", server.Id))
+		zap.L().Debug("NbOfWinners not found in script settings", zap.String("server_uuid", server.Uuid))
 	} else if nbWinners > 0 {
 		server.Info.LiveInfo.NbWinners = &nbWinners
 	}
@@ -607,7 +607,7 @@ func setScriptSettings(server *structs.Server) {
 	// Set points repartition
 	pointsRepartition, ok := scriptSettings[prVar].(string)
 	if !ok {
-		zap.L().Debug("PointsRepartition not found in script settings", zap.Int("server_id", server.Id))
+		zap.L().Debug("PointsRepartition not found in script settings", zap.String("server_uuid", server.Uuid))
 	} else if len(pointsRepartition) > 0 {
 		repartitionList := []int{}
 		for i := range strings.SplitSeq(pointsRepartition, ",") {

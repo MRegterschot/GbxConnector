@@ -41,7 +41,7 @@ func (pl *PlayersListener) onPlayerConnect(playerConnectEvent events.PlayerConne
 
 	pl.Server.Info.ActivePlayers = append(pl.Server.Info.ActivePlayers, structs.ToPlayerInfo(playerInfo))
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string]structs.PlayerInfo{
+	handlers.BroadcastPlayers(pl.Server.Uuid, map[string]structs.PlayerInfo{
 		"connect": structs.ToPlayerInfo(playerInfo),
 	})
 }
@@ -54,7 +54,7 @@ func (pl *PlayersListener) onPlayerDisconnect(playerDisconnectEvent events.Playe
 		}
 	}
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string]string{
+	handlers.BroadcastPlayers(pl.Server.Uuid, map[string]string{
 		"disconnect": playerDisconnectEvent.Login,
 	})
 }
@@ -83,7 +83,7 @@ func (pl *PlayersListener) onPlayerInfoChanged(playerInfoChangedEvent events.Pla
 		return
 	}
 
-	handlers.BroadcastPlayers(pl.Server.Id, map[string]structs.PlayerInfo{
+	handlers.BroadcastPlayers(pl.Server.Uuid, map[string]structs.PlayerInfo{
 		"infoChanged": playerInfo,
 	})
 }
@@ -112,7 +112,7 @@ func SyncPlayerList(server *structs.Server) {
 
 	server.Info.ActivePlayers = playerList
 
-	handlers.BroadcastPlayers(server.Id, map[string][]structs.PlayerInfo{
+	handlers.BroadcastPlayers(server.Uuid, map[string][]structs.PlayerInfo{
 		"playerList": playerList,
 	})
 }

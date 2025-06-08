@@ -44,19 +44,19 @@ func ConnectClient(server *structs.Server) error {
 		return errors.New("client is nil")
 	}
 
-	zap.L().Debug("Connecting to server", zap.Int("server_id", server.Id), zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
+	zap.L().Debug("Connecting to server", zap.String("server_uuid", server.Uuid), zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
 	if err := server.Client.Connect(); err != nil {
-		zap.L().Debug("Failed to connect to server", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Debug("Failed to connect to server", zap.String("server_uuid", server.Uuid), zap.Error(err))
 		return err
 	}
 
-	zap.L().Info("Authenticating with server", zap.Int("server_id", server.Id))
+	zap.L().Info("Authenticating with server", zap.String("server_uuid", server.Uuid))
 	if err := server.Client.Authenticate(server.User, server.Pass); err != nil {
-		zap.L().Error("Failed to authenticate with server", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to authenticate with server", zap.String("server_uuid", server.Uuid), zap.Error(err))
 		return err
 	}
 
-	zap.L().Info("Connected to server", zap.Int("server_id", server.Id), zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
+	zap.L().Info("Connected to server", zap.String("server_uuid", server.Uuid), zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
 
 	server.Client.EnableCallbacks(true)
 	server.Client.SetApiVersion("2023-04-16")
@@ -65,14 +65,14 @@ func ConnectClient(server *structs.Server) error {
 	// Set the active map to the current map
 	mapInfo, err := server.Client.GetCurrentMapInfo()
 	if err != nil {
-		zap.L().Error("Failed to get current map info", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to get current map info", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 
 	// Set the map info
 	server.Info.ActiveMap = mapInfo.UId
 
 	if err := server.Client.ChatEnableManualRouting(false, true); err != nil {
-		zap.L().Error("Failed to disable manual routing", zap.Int("server_id", server.Id), zap.Error(err))
+		zap.L().Error("Failed to disable manual routing", zap.String("server_uuid", server.Uuid), zap.Error(err))
 	}
 	server.Info.Chat.ManualRouting = false
 
@@ -90,12 +90,12 @@ func StartReconnectLoop(ctx context.Context, server *structs.Server) {
 		for {
 			select {
 			case <-ctx.Done():
-				zap.L().Info("Reconnect loop stopped", zap.Int("server_id", server.Id))
+				zap.L().Info("Reconnect loop stopped", zap.String("server_uuid", server.Uuid))
 				return
 
 			case <-ticker.C:
 				if server.Client == nil || !server.Client.IsConnected {
-					zap.L().Debug("Client disconnected or missing, attempting reconnect", zap.Int("server_id", server.Id))
+					zap.L().Debug("Client disconnected or missing, attempting reconnect", zap.String("server_uuid", server.Uuid))
 
 					if server.Client == nil {
 						if err := GetClient(server); err != nil {

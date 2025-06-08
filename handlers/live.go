@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/structs"
@@ -11,26 +10,20 @@ import (
 	"go.uber.org/zap"
 )
 
-var liveSockets = make(map[int]*structs.SocketClients)
+var liveSockets = make(map[string]*structs.SocketClients)
 
-func GetLiveSocket(serverId int) *structs.SocketClients {
-	if _, ok := liveSockets[serverId]; !ok {
-		liveSockets[serverId] = &structs.SocketClients{
+func GetLiveSocket(serverUuid string) *structs.SocketClients {
+	if _, ok := liveSockets[serverUuid]; !ok {
+		liveSockets[serverUuid] = &structs.SocketClients{
 			Clients: make(map[*websocket.Conn]bool),
 		}
 	}
-	return liveSockets[serverId]
+	return liveSockets[serverUuid]
 }
 
 func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	serverIDStr := vars["id"]
-
-	serverId, err := strconv.Atoi(serverIDStr)
-	if err != nil {
-		http.Error(w, "Invalid server ID", http.StatusBadRequest)
-		return
-	}
+	serverUuid := vars["uuid"]
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -39,7 +32,7 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save connection
-	ls := GetLiveSocket(serverId)
+	ls := GetLiveSocket(serverUuid)
 	ls.ClientsMu.Lock()
 	ls.Clients[conn] = true
 	ls.ClientsMu.Unlock()
@@ -47,7 +40,7 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	// Get current live info of the server
 	var liveInfo *structs.LiveInfo
 	for _, server := range config.AppEnv.Servers {
-		if server.Id == serverId {
+		if server.Uuid == serverUuid {
 			liveInfo = server.Info.LiveInfo
 			break
 		}
@@ -69,7 +62,7 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for {
 			if _, _, err := conn.NextReader(); err != nil {
-				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Int("serverId", serverId))
+				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.String("server_uuid", serverUuid))
 				ls.ClientsMu.Lock()
 				delete(ls.Clients, conn)
 				ls.ClientsMu.Unlock()
@@ -81,10 +74,10 @@ func HandleLiveConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 // Broadcast message to all connected clients
-func BroadcastLive(serverId int, message any) {
-	ls := GetLiveSocket(serverId)
+func BroadcastLive(serverUuid string, message any) {
+	ls := GetLiveSocket(serverUuid)
 	if ls == nil {
-		zap.L().Error("Live socket not found", zap.Int("serverId", serverId))
+		zap.L().Error("Live socket not found", zap.String("server_uuid", serverUuid))
 		return
 	}
 

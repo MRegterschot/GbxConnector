@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/structs"
@@ -11,27 +10,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var playersSockets = make(map[int]*structs.SocketClients) // Map of socket clients by server ID
+var playersSockets = make(map[string]*structs.SocketClients) // Map of socket clients by server ID
 
-func GetPlayersSocket(serverId int) *structs.SocketClients {
-	if _, ok := playersSockets[serverId]; !ok {
-		playersSockets[serverId] = &structs.SocketClients{
+func GetPlayersSocket(serverUuid string) *structs.SocketClients {
+	if _, ok := playersSockets[serverUuid]; !ok {
+		playersSockets[serverUuid] = &structs.SocketClients{
 			Clients: make(map[*websocket.Conn]bool),
 		}
 	}
-	return playersSockets[serverId]
+	return playersSockets[serverUuid]
 }
 
 // WebSocket connection handler
 func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	serverIDStr := vars["id"]
-
-	serverId, err := strconv.Atoi(serverIDStr)
-	if err != nil {
-		http.Error(w, "Invalid server ID", http.StatusBadRequest)
-		return
-	}
+	serverUuid := vars["uuid"]
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -40,7 +33,7 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save connection
-	ps := GetPlayersSocket(serverId)
+	ps := GetPlayersSocket(serverUuid)
 	ps.ClientsMu.Lock()
 	ps.Clients[conn] = true
 	ps.ClientsMu.Unlock()
@@ -48,7 +41,7 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	// Get current active map of the server
 	activePlayers := make([]structs.PlayerInfo, 0)
 	for _, server := range config.AppEnv.Servers {
-		if server.Id == serverId {
+		if server.Uuid == serverUuid {
 			if server.Info.ActivePlayers != nil {
 				activePlayers = server.Info.ActivePlayers
 			}
@@ -72,7 +65,7 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for {
 			if _, _, err := conn.NextReader(); err != nil {
-				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Int("serverId", serverId))
+				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.String("server_uuid", serverUuid))
 				ps.ClientsMu.Lock()
 				delete(ps.Clients, conn)
 				ps.ClientsMu.Unlock()
@@ -84,10 +77,10 @@ func HandlePlayersConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 // Broadcast message to all connected clients
-func BroadcastPlayers(serverId int, message any) {
-	ps := GetPlayersSocket(serverId)
+func BroadcastPlayers(serverUuid string, message any) {
+	ps := GetPlayersSocket(serverUuid)
 	if ps == nil {
-		zap.L().Error("Players socket not found", zap.Int("serverId", serverId))
+		zap.L().Error("Players socket not found", zap.String("server_uuid", serverUuid))
 		return
 	}
 

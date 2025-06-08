@@ -36,9 +36,9 @@ func SetupAndRunApp() (*http.Server, error) {
 			}
 
 			GetClient(server)
-			handlers.GetMapSocket(server.Id)
-			handlers.GetPlayersSocket(server.Id)
-			handlers.GetLiveSocket(server.Id)
+			handlers.GetMapSocket(server.Uuid)
+			handlers.GetPlayersSocket(server.Uuid)
+			handlers.GetLiveSocket(server.Uuid)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			server.Ctx = ctx
