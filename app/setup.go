@@ -7,6 +7,8 @@ import (
 
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/handlers"
+	"github.com/MRegterschot/GbxConnector/lib"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
@@ -29,6 +31,10 @@ func SetupAndRunApp() (*http.Server, error) {
 	go func() {
 		zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))
 		for _, server := range config.AppEnv.Servers {
+			if server.Uuid == "" {
+				server.Uuid = uuid.NewString()
+			}
+
 			GetClient(server)
 			handlers.GetMapSocket(server.Id)
 			handlers.GetPlayersSocket(server.Id)
@@ -39,6 +45,11 @@ func SetupAndRunApp() (*http.Server, error) {
 			server.CancelFunc = cancel
 
 			go StartReconnectLoop(ctx, server)
+		}
+
+		// Save servers to ensure UUIDs are set
+		if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
+			zap.L().Error("Failed to write servers.json", zap.Error(err))
 		}
 	}()
 

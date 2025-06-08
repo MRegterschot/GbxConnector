@@ -10,6 +10,7 @@ import (
 	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -45,6 +46,8 @@ func AddServer(server *structs.Server) (*structs.Server, error) {
 		}
 		server.Id = maxID + 1
 	}
+
+	server.Uuid = uuid.NewString()
 
 	config.AppEnv.Servers = append(config.AppEnv.Servers, server)
 	if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
@@ -86,20 +89,30 @@ func DeleteServer(serverId int) error {
 	return errors.New("server not found")
 }
 
-func UpdateServer(serverId int, server *structs.Server) (*structs.Server, error) {
-	for i, s := range config.AppEnv.Servers {
-		if s.Id == serverId {
-			server.Id = serverId
-			config.AppEnv.Servers[i] = server
+func UpdateServer(serverId int, serverInput *structs.Server) (*structs.Server, error) {
+	for _, server := range config.AppEnv.Servers {
+		if server.Id == serverId {
+			server.UpdateServer(
+				serverInput.Name,
+				serverInput.Description,
+				serverInput.Host,
+				serverInput.XMLRPCPort,
+				serverInput.User,
+				serverInput.Pass,
+				serverInput.FMUrl,
+			)
+
 			if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
 				zap.L().Error("Failed to write servers.json", zap.Error(err))
 				return nil, err
 			}
 			zap.L().Info("Server updated", zap.Int("server_id", serverId))
-			ShutdownServer(s)
+
+			ShutdownServer(server)
 			GetClient(server)
 			handlers.GetMapSocket(server.Id)
 			handlers.GetPlayersSocket(server.Id)
+
 			ctx, cancel := context.WithCancel(context.Background())
 			server.Ctx = ctx
 			server.CancelFunc = cancel

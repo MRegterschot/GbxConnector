@@ -8,6 +8,7 @@ import (
 
 type Server struct {
 	Id          int     `json:"id"`
+	Uuid        string  `json:"uuid"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 	Host        string  `json:"host"`
@@ -21,6 +22,19 @@ type Server struct {
 	Client     *gbxclient.GbxClient `json:"-"`
 	CancelFunc context.CancelFunc   `json:"-"`
 	Ctx        context.Context      `json:"-"`
+}
+
+type ServerResponse struct {
+	Id          int     `json:"id"`
+	Uuid        string  `json:"uuid"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	Host        string  `json:"host"`
+	XMLRPCPort  int     `json:"xmlrpcPort"`
+	User        string  `json:"user"`
+	Pass        string  `json:"pass"`
+	FMUrl       *string `json:"fmUrl,omitempty"`
+	IsConnected bool    `json:"isConnected"`
 }
 
 type ServerList []*Server
@@ -40,6 +54,7 @@ func (s *Server) ToServerResponse() ServerResponse {
 
 	return ServerResponse{
 		Id:          s.Id,
+		Uuid:        s.Uuid,
 		Name:        s.Name,
 		Description: s.Description,
 		Host:        s.Host,
@@ -61,6 +76,7 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 
 		responses[i] = ServerResponse{
 			Id:          s.Id,
+			Uuid:        s.Uuid,
 			Name:        s.Name,
 			Description: s.Description,
 			Host:        s.Host,
@@ -88,4 +104,16 @@ func (s *Server) ResetLiveInfo() {
 		s.Info = &ServerInfo{}
 	}
 	s.Info.LiveInfo = liveInfo
+}
+
+func (s *Server) UpdateServer(name string, description *string, host string, xmlrpcPort int, user, pass string, fmUrl *string) {
+	s.Name = name
+	s.Description = description
+	s.Host = host
+	s.XMLRPCPort = xmlrpcPort
+	s.User = user
+	s.Pass = pass
+	s.FMUrl = fmUrl
+
+	s.ResetLiveInfo()
 }
