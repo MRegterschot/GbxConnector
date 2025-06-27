@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"context"
+	"net"
 	"net/http"
 
-	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/lib"
 )
 
@@ -25,23 +25,23 @@ func RequireRoles(allowedRoles ...string) func(http.Handler) http.Handler {
 			authHeader := r.Header.Get("Authorization")
 			token := lib.ExtractBearerToken(authHeader)
 
-			
+			// Allow requests from localhost or internal Docker network without token
+			remoteIP := r.RemoteAddr
+			host, _, err := net.SplitHostPort(remoteIP)
+			if err != nil {
+				host = remoteIP // fallback if no port
+			}
+
+			if host == "127.0.0.1" || host == "::1" || lib.IsDockerInternalIP(host) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			// If token not in header, try query param
 			if token == "" {
 				token = r.URL.Query().Get("token")
 			}
-
-			if token == "" {
-				http.Error(w, "Missing or invalid Authorization token", http.StatusUnauthorized)
-				return
-			}
-
-			// Bypass for internal API key
-			if token == config.AppEnv.InternalApiKey {
-				next.ServeHTTP(w, r) // trusted
-				return
-			}
-
+			
 			user, err := lib.ValidateAndGetUser(token)
 			if err != nil {
 				http.Error(w, "Invalid token", http.StatusUnauthorized)

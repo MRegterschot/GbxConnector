@@ -40,7 +40,6 @@ func LoadEnv() error {
 		Port:              port,
 		LogLevel:          os.Getenv("LOG_LEVEL"),
 		JwtSecret:         os.Getenv("JWT_SECRET"),
-		InternalApiKey:    os.Getenv("INTERNAL_API_KEY"),
 		ReconnectInterval: time.Duration(reconnectInterval) * time.Second,
 		Servers:           servers,
 	}

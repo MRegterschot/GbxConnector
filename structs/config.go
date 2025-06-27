@@ -9,6 +9,5 @@ type Env struct {
 	LogLevel          string
 	ReconnectInterval time.Duration
 	JwtSecret         string
-	InternalApiKey    string
 	Servers           ServerList `json:"servers"`
 }
