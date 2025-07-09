@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/MRegterschot/GbxConnector/config"
+	"github.com/MRegterschot/GbxConnector/lib"
 	"github.com/MRegterschot/GbxConnector/structs"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -21,12 +22,14 @@ var upgrader = websocket.Upgrader{
 }
 
 type ServerSocket struct {
-	Clients   map[*websocket.Conn]bool // Connected clients
-	ClientsMu sync.Mutex
+	Clients       map[*websocket.Conn]bool // Connected clients
+	ClientsMu     sync.Mutex
+	Subscriptions map[*websocket.Conn]map[string]bool // conn => set of serverUuids
 }
 
 var serverSocket = &ServerSocket{
-	Clients: make(map[*websocket.Conn]bool),
+	Clients:       make(map[*websocket.Conn]bool),
+	Subscriptions: make(map[*websocket.Conn]map[string]bool),
 }
 
 type ServerAdderFunc func(server *structs.Server) (*structs.Server, error)
@@ -63,18 +66,32 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save connection
+	// Parse query parameters for serverUuids
+	query := r.URL.Query()
+	serverUuids := query["serverUuid"] // expecting ?serverUuid=uuid1&serverUuid=uuid2
+
+	subscriptionSet := make(map[string]bool)
+	for _, uuid := range serverUuids {
+		subscriptionSet[uuid] = true
+	}
+
+	// Save connection and subscriptions
 	serverSocket.ClientsMu.Lock()
 	serverSocket.Clients[conn] = true
+	serverSocket.Subscriptions[conn] = subscriptionSet
 	serverSocket.ClientsMu.Unlock()
 
-	zap.L().Info("New WebSocket connection established", zap.String("remoteAddr", conn.RemoteAddr().String()))
+	zap.L().Info("New WebSocket connection established", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Strings("subscriptions", serverUuids))
 
-	// Send initial message to the client
-	if err := conn.WriteJSON(config.AppEnv.Servers.ToServerResponses()); err != nil {
+	// Send initial message for subscribed servers only
+	allServers := config.AppEnv.Servers.ToServerResponses()
+	filteredServers := lib.FilterServersByUuid(allServers, subscriptionSet)
+
+	if err := conn.WriteJSON(filteredServers); err != nil {
 		zap.L().Error("Failed to send initial message to client", zap.Error(err))
 		serverSocket.ClientsMu.Lock()
 		delete(serverSocket.Clients, conn)
+		delete(serverSocket.Subscriptions, conn)
 		serverSocket.ClientsMu.Unlock()
 		conn.Close()
 		return
@@ -87,6 +104,7 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 				zap.L().Info("WebSocket connection closed", zap.String("remoteAddr", conn.RemoteAddr().String()))
 				serverSocket.ClientsMu.Lock()
 				delete(serverSocket.Clients, conn)
+				delete(serverSocket.Subscriptions, conn)
 				serverSocket.ClientsMu.Unlock()
 				conn.Close()
 				break
@@ -97,14 +115,20 @@ func HandleServersConnection(w http.ResponseWriter, r *http.Request) {
 
 // Broadcast message to all connected clients
 // This function is generic and can be used to send any type of message
-func BroadcastServers[T any](msg T) {
+func BroadcastServers(allServers []structs.ServerResponse) {
 	serverSocket.ClientsMu.Lock()
 	defer serverSocket.ClientsMu.Unlock()
+
 	for conn := range serverSocket.Clients {
-		if err := conn.WriteJSON(msg); err != nil {
+		subscriptionSet := serverSocket.Subscriptions[conn]
+
+		filteredServers := lib.FilterServersByUuid(allServers, subscriptionSet)
+
+		if err := conn.WriteJSON(filteredServers); err != nil {
 			zap.L().Error("Failed to send message to client", zap.Error(err))
 			conn.Close()
 			delete(serverSocket.Clients, conn)
+			delete(serverSocket.Subscriptions, conn)
 		}
 	}
 }
