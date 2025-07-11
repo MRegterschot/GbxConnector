@@ -4,6 +4,7 @@ import (
 	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/handlers"
 	"github.com/MRegterschot/GbxConnector/structs"
+	"go.uber.org/zap"
 )
 
 func AddConnectionListeners(server *structs.Server) {
@@ -17,6 +18,7 @@ func onConnect(server *structs.Server) {
 
 	go func() {
 		for range onConnectChan {
+			zap.L().Info("Server connected", zap.String("server_uuid", server.Uuid))
 			handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
 		}
 	}()
@@ -28,6 +30,7 @@ func onDisconnect(server *structs.Server) {
 
 	go func() {
 		for range onDisconnectChan {
+			zap.L().Info("Server disconnected", zap.String("server_uuid", server.Uuid))
 			handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
 		}
 	}()
