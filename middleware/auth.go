@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/MRegterschot/GbxConnector/config"
 	"github.com/MRegterschot/GbxConnector/lib"
 )
 
@@ -33,7 +34,7 @@ func RequireRoles(admin bool) func(http.Handler) http.Handler {
 				host = remoteIP // fallback if no port
 			}
 
-			if host == "127.0.0.1" || host == "::1" || lib.IsDockerInternalIP(host) {
+			if host == "127.0.0.1" || host == "::1" || lib.IsDockerInternalIP(host, config.AppEnv.DockerNetworkRange) {
 				next.ServeHTTP(w, r)
 				return
 			}

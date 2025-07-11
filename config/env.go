@@ -37,11 +37,12 @@ func LoadEnv() error {
 	}
 
 	AppEnv = &structs.Env{
-		Port:              port,
-		LogLevel:          os.Getenv("LOG_LEVEL"),
-		JwtSecret:         os.Getenv("JWT_SECRET"),
-		ReconnectInterval: time.Duration(reconnectInterval) * time.Second,
-		Servers:           servers,
+		Port:               port,
+		LogLevel:           os.Getenv("LOG_LEVEL"),
+		JwtSecret:          os.Getenv("JWT_SECRET"),
+		ReconnectInterval:  time.Duration(reconnectInterval) * time.Second,
+		DockerNetworkRange: os.Getenv("DOCKER_NETWORK_RANGE"),
+		Servers:            servers,
 	}
 
 	return nil

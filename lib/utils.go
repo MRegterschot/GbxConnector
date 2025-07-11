@@ -16,9 +16,9 @@ func ConvertCallbackData(data any, target any) error {
 	return nil
 }
 
-func IsDockerInternalIP(ip string) bool {
+func IsDockerInternalIP(ip string, networkRange string) bool {
 	parsedIP := net.ParseIP(ip)
-	_, dockerNet, _ := net.ParseCIDR("172.16.0.0/16") // default Docker bridge subnet
+	_, dockerNet, _ := net.ParseCIDR(networkRange)
 	return dockerNet.Contains(parsedIP)
 }
 
