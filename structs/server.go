@@ -7,7 +7,6 @@ import (
 )
 
 type Server struct {
-	Id          int     `json:"id"`
 	Uuid        string  `json:"uuid"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
@@ -25,7 +24,6 @@ type Server struct {
 }
 
 type ServerResponse struct {
-	Id          int     `json:"id"`
 	Uuid        string  `json:"uuid"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
@@ -53,7 +51,6 @@ func (s *Server) ToServerResponse() ServerResponse {
 	}
 
 	return ServerResponse{
-		Id:          s.Id,
 		Uuid:        s.Uuid,
 		Name:        s.Name,
 		Description: s.Description,
@@ -75,7 +72,6 @@ func (servers ServerList) ToServerResponses() []ServerResponse {
 		}
 
 		responses[i] = ServerResponse{
-			Id:          s.Id,
 			Uuid:        s.Uuid,
 			Name:        s.Name,
 			Description: s.Description,

@@ -272,7 +272,7 @@ func (ll *LiveListener) onWarmUpStartRound(warmUpEvent events.WarmUpEventArgs) {
 
 	playerList, err := ll.Server.Client.GetPlayerList(1000, 0)
 	if err != nil {
-		zap.L().Error("Failed to get player list", zap.Int("server_id", ll.Server.Id), zap.Error(err))
+		zap.L().Error("Failed to get player list", zap.String("server_uuid", ll.Server.Uuid), zap.Error(err))
 	}
 
 	ll.Server.Info.LiveInfo.ActiveRound = structs.ActiveRound{

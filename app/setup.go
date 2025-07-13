@@ -26,7 +26,6 @@ func SetupAndRunApp() (*http.Server, error) {
 	handlers.SetAddServerFunc(AddServer)
 	handlers.SetRemoveServerFunc(DeleteServer)
 	handlers.SetUpdateServerFunc(UpdateServer)
-	handlers.SetOrderServersFunc(OrderServers)
 
 	go func() {
 		zap.L().Info("Found servers", zap.Int("count", len(config.AppEnv.Servers)))

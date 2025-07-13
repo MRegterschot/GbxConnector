@@ -24,7 +24,6 @@ func SetupRoutes(r *mux.Router) {
 	r.Handle("/servers", adminOnly(http.HandlerFunc(handlers.HandleAddServer))).Methods("POST")
 	r.Handle("/servers/{uuid:[0-9a-fA-F-]{36}}", adminOnly(http.HandlerFunc(handlers.HandleDeleteServer))).Methods("DELETE")
 	r.Handle("/servers/{uuid:[0-9a-fA-F-]{36}}", adminOnly(http.HandlerFunc(handlers.HandleUpdateServer))).Methods("PUT")
-	r.Handle("/servers/order", adminOnly(http.HandlerFunc(handlers.HandleOrderServers))).Methods("PUT")
 	r.Handle("/chat/{uuid:[0-9a-fA-F-]{36}}/config", adminOnly(http.HandlerFunc(handlers.HandleGetChatConfig))).Methods("GET")
 	r.Handle("/chat/{uuid:[0-9a-fA-F-]{36}}/config", adminOnly(http.HandlerFunc(handlers.HandleUpdateChatConfig))).Methods("PUT")
 

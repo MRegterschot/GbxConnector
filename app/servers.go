@@ -32,19 +32,11 @@ func ShutdownServer(server *structs.Server) {
 
 // AddServer adds a new server to the configuration and sets it up
 func AddServer(server *structs.Server) (*structs.Server, error) {
-	if server.Id == 0 {
-		maxID := 0
-		for _, s := range config.AppEnv.Servers {
-			if s.Host == server.Host && s.XMLRPCPort == server.XMLRPCPort {
-				zap.L().Error("Server already exists", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
-				return nil, errors.New("server already exists")
-			}
-
-			if s.Id > maxID {
-				maxID = s.Id
-			}
+	for _, s := range config.AppEnv.Servers {
+		if s.Host == server.Host && s.XMLRPCPort == server.XMLRPCPort {
+			zap.L().Error("Server already exists", zap.String("host", server.Host), zap.Int("port", server.XMLRPCPort))
+			return nil, errors.New("server already exists")
 		}
-		server.Id = maxID + 1
 	}
 
 	server.Uuid = uuid.NewString()
@@ -123,48 +115,4 @@ func UpdateServer(serverUuid string, serverInput *structs.Server) (*structs.Serv
 		}
 	}
 	return nil, errors.New("server not found")
-}
-
-func OrderServers(serverUuids []string) (structs.ServerList, error) {
-	// Check if all server IDs are valid
-	for _, serverUuid := range serverUuids {
-		found := false
-		for _, server := range config.AppEnv.Servers {
-			if server.Uuid == serverUuid {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, errors.New("server not found")
-		}
-	}
-
-	// Update the order of the servers
-	newServers := make([]*structs.Server, len(serverUuids))
-	for i, serverUuid := range serverUuids {
-		for _, server := range config.AppEnv.Servers {
-			if server.Uuid == serverUuid {
-				newServers[i] = server
-				break
-			}
-		}
-	}
-
-	// Update the ids so its in order
-	for i, server := range newServers {
-		server.Id = i
-	}
-
-	config.AppEnv.Servers = newServers
-
-	if err := lib.WriteFile("./servers.json", &config.AppEnv.Servers); err != nil {
-		zap.L().Error("Failed to write servers.json", zap.Error(err))
-		return nil, err
-	}
-
-	// Broadcast the updated server list
-	handlers.BroadcastServers(config.AppEnv.Servers.ToServerResponses())
-	zap.L().Info("Server order updated", zap.Strings("server_uuids", serverUuids))
-	return config.AppEnv.Servers, nil
 }
